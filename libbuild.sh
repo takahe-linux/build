@@ -25,6 +25,13 @@ mark() {
     configdir="$1"
     target="$2"
 
+    # Sanity check the target...
+    case "${target%/*}" in
+        targets|packages|toolchain) ;;
+        actions) return 0;;
+        *) error 2 "Unknown target '${target}'!";;
+    esac
+
     state="$(current_state "${configdir}" "${target}")"
     if [ -z "${state}" ]; then
         exit 2
