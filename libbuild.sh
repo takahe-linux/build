@@ -10,14 +10,18 @@ current_state() {
     configdir="$1"
     target="$2"
 
-    # TODO: This should be more flexible...
-    case "${target%/*}" in
-        targets) md5sum "${configdir}/src/${target}" | cut -d' ' -f1;;
-        packages|toolchain) md5sum "${configdir}/src/${target}/PKGBUILD" \
-            | cut -d' ' -f1;;
-        actions) echo "na" ;; # Actions do not have a state, yet.
-        *) error 2 "Unknown target '${target}'!";;
-    esac
+    path="$(dirname "$(realpath "$0")")/targets/${target%/*}"
+
+    if [ -d "${path}" ]; then
+        if [ -e "${path}/state" ]; then
+            # Run the script to find the current state.
+            "${path}/state" "${configdir}" "${target}" || exit $?
+        else
+            echo "na" # Not applicable...
+        fi
+    else
+        echo "Unknown target type '${target%/*}'!"
+    fi
 }
 
 mark() {
@@ -25,21 +29,20 @@ mark() {
     configdir="$1"
     target="$2"
 
-    # Sanity check the target...
-    case "${target%/*}" in
-        targets|packages|toolchain) ;;
-        actions) return 0;;
-        *) error 2 "Unknown target '${target}'!";;
-    esac
-
     state="$(current_state "${configdir}" "${target}")"
     if [ -z "${state}" ]; then
         exit 2
+    elif [ "${state}" == "na" ]; then
+        # States are not recorded for the given target.
+        return
     fi
+
+    # Create a dir if needed.
     dir="${configdir}/build/$(dirname "${target}")"
     if [ ! -e "${dir}" ]; then
         mkdir -p "${dir}"
     fi
+    # Save the state.
     echo "${state}" > "${configdir}/build/${target}"
 }
 

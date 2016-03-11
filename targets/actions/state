@@ -1,0 +1,11 @@
+#!/usr/bin/sh
+#
+# Print the current state of the given target.
+# 
+# Author:   Alastair Hughes
+# Contact:  < hobbitalastair at yandex dot com >
+
+configdir="$1"
+target="$2"
+
+echo "na" # Actions do not have a state, yet.
