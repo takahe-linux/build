@@ -40,8 +40,8 @@ message() {
             min_level="1";;
         warn) fmt="${C_WARN}>>>${C_RESET} %s\n";;
         error) fmt="${C_ERR}!!!${C_BOLD} %s${C_RESET}\n";;
-        *) print "${C_ERR}BUG${C_RESET} Unknown message format '${level}'!\n" \
-                > /dev/stderr
+        *) printf "${C_ERR}BUG${C_RESET} Unknown message format '%s'!\n" \
+                "${level}" > /dev/stderr
             exit 1;;
     esac
     
