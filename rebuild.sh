@@ -11,45 +11,67 @@ USAGE="<config dir> [<target>]..."
 source "$(dirname "$(realpath "$0")")/libmain.sh"
 source "$(dirname "$(realpath "$0")")/libbuild.sh"
 
-# Create a new dict of targets.
-declare -A old
+# Create a new dict of targets, marking their current states.
+declare -A targets
 
 rebuild() {
     # Rebuild the given target, as needed.
+    # We consider 5 states: rebuilt, old, fail, skip, and good.
     configdir="$1"
     shift
-    local current_old=false
+    local current_state="good"
 
-    # First, check whether any of the dependencies are marked as old.
+    # Check wether this is old.
+    if old "${configdir}" "$1"; then
+        current_state="old"
+    fi
+
+    # Check the state of the dependencies.
     for dep in ${graph["$1"]}; do
-        if [ -z "${old["${dep}"]}" ]; then
+        if [ -z "${targets["${dep}"]}" ]; then
             error 1 "Encountered '$1' before it's dependency '${dep}'!"
-        elif "${old["${dep}"]}"; then
-            current_old=true
         fi
+        case "${targets["${dep}"]}" in
+            old|rebuilt) current_state="old";;
+            fail|skip) current_state="skip"; break;;
+        esac
     done
 
-    # Then check wether this is old.
-    if old "${configdir}" "$1"; then
-        current_old=true
-    fi
+    # Figure out the appropriate action.
+    targets["$1"]="${current_state}"
+    case "${current_state}" in
+        old) message warn "$1 is out of date"
+            run_action build "${configdir}" "$1"
+            if [ "$?" -ne 0 ]; then
+                message error "Failed to build '$1'!"
+                targets["$1"]="fail"
+            else
+                mark "${configdir}" "$1" || \
+                    error "$?" "Invalid target '$1'!"
+                targets["$1"]="rebuilt"
+            fi;;
+        skip) message warn "Skipping $1";;
+        *) message info "$1 is up to date";;
+    esac
+}
 
-    # Finally, rebuild and save the result.
-    old["$1"]="${current_old}"
-    if "${current_old}"; then
-        message warn "$1 is out of date"
-        run_action build "${configdir}" "$1"
-        local ret="$?"
-        if [ "${ret}" -ne 0 ]; then
-            message error "Failed to build '$1'!"
-        else
-            mark "${configdir}" "$1" || \
-                error $? "Invalid target '$1'!"
-            old["$1"]=false
-        fi
-    else
-        message info "$1 is up to date"
-    fi
+summary() {
+    # Print a summary.
+
+    local rebuilt=0
+    local failed=0
+    local skipped=0
+
+    for target in ${!targets[@]}; do
+        case "${targets["${target}"]}" in
+            rebuilt) rebuilt="$(expr "${rebuilt}" + 1)";;
+            fail) failed="$(expr "${failed}" + 1)";;
+            skip) skipped="$(expr "${skipped}" + 1)";;
+        esac
+    done
+
+    message info "$(printf "Rebuilt: %s, failed: %s, skipped: %s\n" \
+        "${rebuilt}" "${failed}" "${skipped}")"
 }
 
 main() {
@@ -60,6 +82,7 @@ main() {
     generate_graph "${configdir}" ${target_list}
     generate_states "${configdir}"
     walk "${CONFIGDIR}" "rebuild" ${target_list}
+    summary
 }
 
 # Parse the arguments.

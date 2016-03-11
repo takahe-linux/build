@@ -18,7 +18,7 @@ run_action() {
     if [ -d "${path}" ]; then
         if [ -e "${path}/${action}" ]; then
             # Run the script to find the current state.
-            "${path}/${action}" "${configdir}" "${target}" || exit $?
+            "${path}/${action}" "${configdir}" "${target}" || return $?
         else
             error 1 "Target '${target}' does not support action ${action}!"
         fi
