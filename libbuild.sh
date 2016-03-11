@@ -5,17 +5,56 @@
 
 declare -A graph    # Visited nodes and dependencies
 
+current_state() {
+    # Print the current state for the given target, determined as appropriate.
+    configdir="$1"
+    target="$2"
+
+    # TODO: This should be more flexible...
+    case "${target%/*}" in
+        targets) md5sum "${configdir}/src/${target}" | cut -d' ' -f1;;
+        packages|toolchain) md5sum "${configdir}/src/${target}/PKGBUILD" \
+            | cut -d' ' -f1;;
+        actions) echo "na" ;; # Actions do not have a state, yet.
+        *) error 2 "Unknown target '${target}'!";;
+    esac
+}
+
+mark() {
+    # Mark the given target as up-to-date.
+    configdir="$1"
+    target="$2"
+
+    state="$(current_state "${configdir}" "${target}")"
+    if [ -z "${state}" ]; then
+        exit 2
+    fi
+    dir="${configdir}/build/$(dirname "${target}")"
+    if [ ! -e "${dir}" ]; then
+        mkdir -p "${dir}"
+    fi
+    echo "${state}" > "${configdir}/build/${target}"
+}
+
 old() {
     # Return true if the given target is out of date.
     # We consider a target to be out of date if it has changed (we ignore
-    # dependencies) - so for files we can check the shasum, for packages
-    # we can get the version, etc.
+    # dependencies), so we compare the current state with the old state.
+    # If there is no recorded state, assume that the target is 'old'.
     configdir="$1"
     target="$2"
     shift 2
 
-    # TODO: Implement.
-    return 0
+    state="$(current_state "${configdir}" "${target}")"
+    if [ -z "${state}" ]; then
+        exit 2
+    elif [ "${state}" == "na" ]; then
+        return 1
+    fi
+    if [ -f "${configdir}/build/${target}" ] && \
+        [ "${state}" == "$(cat "${configdir}/build/${target}")" ]; then
+        return 1
+    fi
 }
 
 depends() {
@@ -86,8 +125,8 @@ generate_graph() {
 walk() {
     # Walk each target in order, using the prebuilt graph.
     # The traversal is depth first, post order.
-    configdir="$2"
-    func="$1"
+    configdir="$1"
+    func="$2"
     shift 2
 
     # We maintain a stack.

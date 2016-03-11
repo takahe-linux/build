@@ -56,7 +56,7 @@ main() {
         target_list+=("$(echo "${targ}" | grep -o -e '[^/]*/[^/]*$')")
     done
     generate_graph "${CONFIGDIR}" ${target_list[@]}
-    walk "walk_func" ${target_list[@]}
+    walk "${CONFIGDIR}" "walk_func" ${target_list[@]}
 }
 
 # Parse the arguments.
