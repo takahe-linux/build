@@ -88,7 +88,7 @@ parseargs() {
             --) return;;
             -q|--quiet) VERBOSE="0";;
             -d|--debug) VERBOSE="2";;
-            -?|-h|--help) echo "$0 [-?|-h|--help] [-v|--version] ${USAGE}"
+            -\?|-h|--help) echo "$0 [-?|-h|--help] [-v|--version] ${USAGE}"
                 exit 0;;
             -v|--version) echo "$(basename "$0") - ${VERSION}"
                 exit 0;;
