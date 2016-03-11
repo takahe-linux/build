@@ -73,7 +73,10 @@ depends() {
         targets) cat "${configdir}/src/${target}" || \
             error 1 "Target ${target} does not exist!";;
         packages|toolchain) # Extract the depends from the PKGBUILD
-            echo "actions/setup.sh"; \
+            if [ ! -e "${configdir}/src/${target}/PKGBUILD" ]; then
+                error 1 "No such target '${target}'!"
+            fi
+            echo "actions/setup.sh"
             sed -n -e 's:  *: :g' -e '/# Depends:/p' \
             < "${configdir}/src/${target}/PKGBUILD" | \
             sed -e 's:# Depends\:::' | \
@@ -182,10 +185,26 @@ walk() {
                 # Pop it off the stack, mark it as visited, and run the
                 # function on it.
                 stack=(${stack[@]:0:$(expr ${#stack[@]} - 1)})
-                "${func}" "${configdir}" "${current}"
+                "${func}" "${configdir}" "${current}" "${stack[@]}"
                 visited["${current}"]=true
             fi
         done
     done
 }
 
+get_target_list() {
+    # Print a list of targets. Default is all of the targets found in the
+    # source directory.
+    local configdir="$1"
+    shift
+
+    if [ "$#" -eq 0 ]; then
+        local target_list=()
+        for targ in "${CONFIGDIR}"/src/targets/*; do
+            target_list+=("$(echo "${targ}" | grep -o -e '[^/]*/[^/]*$')")
+        done
+    else
+        local target_list=$@
+    fi
+    printf "${target_list}"
+}

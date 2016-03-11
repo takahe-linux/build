@@ -1,13 +1,13 @@
 #!/usr/bin/bash
 #
-# Print a current state?
+# Print a list of old or outdated packages.
 # 
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
 
 # Initial setup.
 VERSION="0.1"
-USAGE="<config dir>"
+USAGE="<config dir> [<target>]..."
 source "$(dirname "$(realpath "$0")")/libmain.sh"
 source "$(dirname "$(realpath "$0")")/libbuild.sh"
 
@@ -49,18 +49,16 @@ walk_func() {
 
 main() {
     # Print the current status.
-
-    # We are interested in the possible targets...
-    local target_list=()
-    for targ in "${CONFIGDIR}"/src/targets/*; do
-        target_list+=("$(echo "${targ}" | grep -o -e '[^/]*/[^/]*$')")
-    done
-    generate_graph "${CONFIGDIR}" ${target_list[@]}
-    walk "${CONFIGDIR}" "walk_func" ${target_list[@]}
+    local configdir="$1"
+    shift
+    local target_list="$(get_target_list "${configdir}" $@)"
+    generate_graph "${configdir}" ${target_list}
+    walk "${CONFIGDIR}" "walk_func" ${target_list}
 }
 
 # Parse the arguments.
 CONFIGDIR="" # Set the initial config dir.
+TARGETS="" # The set of targets to investigate.
 parseargs $@ # Initial argument parse.
 # Manual argument parse.
 for arg in $@; do
@@ -69,10 +67,10 @@ for arg in $@; do
         *) if [ "${CONFIGDIR}" == "" ]; then
             CONFIGDIR="${arg}"
         else
-            error 1 "Unknown argument '${arg}'"
+            TARGETS+=" ${arg}"
         fi;;
     esac
 done
 check_configdir "${CONFIGDIR}"
 
-main "${CONFIGDIR}"
+main "${CONFIGDIR}" ${TARGETS}
