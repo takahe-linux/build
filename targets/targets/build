@@ -1,0 +1,11 @@
+#!/usr/bin/sh
+#
+# Build the given target.
+#
+# Author:   Alastair Hughes
+# Contact:  < hobbitalastair at yandex dot com >
+
+# Building is essentially meaningless for a target; instead, just print a
+# message saying that the target has been met.
+echo "Met ${2}"
+
