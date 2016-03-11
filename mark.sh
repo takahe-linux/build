@@ -34,5 +34,5 @@ if [ "${TARGET}" == "" ]; then
     error 1 "No target given!"
 fi
 
-mark "${CONFIGDIR}" "${TARGET}" > /dev/null || \
+mark "${CONFIGDIR}" "${TARGET}" || \
     error $? "Invalid target '${TARGET}'"
