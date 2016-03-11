@@ -45,6 +45,7 @@ rebuild() {
         else
             mark "${configdir}" "$1" || \
                 error $? "Invalid target '$1'!"
+            old["$1"]=false
         fi
     else
         message info "$1 is up to date"
