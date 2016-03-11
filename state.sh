@@ -60,12 +60,12 @@ main() {
 }
 
 # Parse the arguments.
+CONFIGDIR="" # Set the initial config dir.
 parseargs $@ # Initial argument parse.
-
-CONFIGDIR=""
+# Manual argument parse.
 for arg in $@; do
+    ignore_arg "${arg}" || \
     case "${arg}" in
-        --);; # Ignore...
         *) if [ "${CONFIGDIR}" == "" ]; then
             CONFIGDIR="${arg}"
         else
