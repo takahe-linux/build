@@ -4,6 +4,7 @@
 # Contact:  < hobbitalastair at yandex dot com >
 
 declare -A graph    # Visited nodes and dependencies
+declare -A states   # Targets and their current state
 
 run_action() {
     # Run the given action for the given target.
@@ -43,10 +44,8 @@ mark() {
     for dep in "${target}" ${graph["${target}"]}; do
 
         # Find the current state.
-        state="$(run_action state "${configdir}" "${dep}")"
-        if [ -z "${state}" ]; then
-            exit 2
-        elif [ "${state}" == "na" ]; then
+        state="${states["${dep}"]}"
+        if [ "${state}" == "na" ]; then
             # Ignore 'na'.
             continue
         fi
@@ -78,10 +77,9 @@ old() {
     # Check that the target and all deps are up to date.
     for dep in "${target}" ${graph["${target}"]}; do
         # Find the current state.
-        state="$(run_action state "${configdir}" "${dep}")"
-        if [ -z "${state}" ]; then
-            exit 2
-        elif [ "${state}" == "na" ]; then
+        state="${states["${dep}"]}"
+        if [ "${state}" == "na" ]; then
+            # Ignore 'na'.
             continue
         fi
         
@@ -136,6 +134,20 @@ generate_graph() {
                 to_visit+=("${dep}")
             fi
         done
+    done
+}
+
+generate_states() {
+    # Generate a map from targets to states.
+    local configdir="$1"
+
+    for target in ${!graph[@]}; do
+        # For the target, generate and save the current state.
+        state="$(run_action state "${configdir}" "${target}")"
+        if [ -z "${state}" ]; then
+            exit 2
+        fi
+        states["${target}"]="${state}"
     done
 }
 
