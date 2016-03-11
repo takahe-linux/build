@@ -40,7 +40,7 @@ mark() {
     printf '' > "${configdir}/build/${target}"
 
     # Save the state for the target and all of the dependencies.
-    for dep in "${target}" $(run_action deps "${configdir}" "${target}"); do
+    for dep in "${target}" ${graph["${target}"]}; do
 
         # Find the current state.
         state="$(run_action state "${configdir}" "${dep}")"
@@ -76,7 +76,7 @@ old() {
     fi
 
     # Check that the target and all deps are up to date.
-    for dep in "${target}" $(run_action deps "${configdir}" "${target}"); do
+    for dep in "${target}" ${graph["${target}"]}; do
         # Find the current state.
         state="$(run_action state "${configdir}" "${dep}")"
         if [ -z "${state}" ]; then
