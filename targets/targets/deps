@@ -5,14 +5,10 @@
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
 
-configdir="$1"
-target="$2"
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
 
 path="${configdir}/src/${target}"
+exists "${path}"
 
-if [ ! -e "${path}" ]; then
-    echo "No such target '${target}'!" > /dev/stderr
-    exit 1
-fi
-
-cat "${path}"
+cat "${path}" || exit $?

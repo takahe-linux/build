@@ -5,9 +5,9 @@
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
 
-configdir="$1"
-target="$2"
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
 
 if "${DEBUG}"; then
-    echo "Built $target"
+    message debug "Built ${target}"
 fi

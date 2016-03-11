@@ -5,7 +5,12 @@
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
 
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
+
 # Building is essentially meaningless for a target; instead, just print a
 # message saying that the target has been met.
-echo "Met ${2}"
+if "${DEBUG}"; then
+    message debug "Met ${target}"
+fi
 
