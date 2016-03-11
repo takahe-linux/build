@@ -5,22 +5,24 @@
 
 declare -A graph    # Visited nodes and dependencies
 
-current_state() {
-    # Print the current state for the given target, determined as appropriate.
-    configdir="$1"
-    target="$2"
+run_action() {
+    # Run the given action for the given target.
+    local action="$1"
+    local configdir="$2"
+    local target="$3"
+    shift 3
 
     path="$(dirname "$(realpath "$0")")/targets/${target%/*}"
 
     if [ -d "${path}" ]; then
-        if [ -e "${path}/state" ]; then
+        if [ -e "${path}/${action}" ]; then
             # Run the script to find the current state.
-            "${path}/state" "${configdir}" "${target}" || exit $?
+            "${path}/${action}" "${configdir}" "${target}" || exit $?
         else
-            echo "na" # Not applicable...
+            error 1 "Target '${target}' does not support action ${action}!"
         fi
     else
-        echo "Unknown target type '${target%/*}'!"
+        error 1 "Unknown target type '${target%/*}'!"
     fi
 }
 
@@ -29,7 +31,7 @@ mark() {
     configdir="$1"
     target="$2"
 
-    state="$(current_state "${configdir}" "${target}")"
+    state="$(run_action state "${configdir}" "${target}")"
     if [ -z "${state}" ]; then
         exit 2
     elif [ "${state}" == "na" ]; then
@@ -55,7 +57,7 @@ old() {
     target="$2"
     shift 2
 
-    state="$(current_state "${configdir}" "${target}")"
+    state="$(run_action state "${configdir}" "${target}")"
     if [ -z "${state}" ]; then
         exit 2
     elif [ "${state}" == "na" ]; then
@@ -65,32 +67,6 @@ old() {
         [ "${state}" == "$(cat "${configdir}/build/${target}")" ]; then
         return 1
     fi
-}
-
-depends() {
-    # Print the dependencies of the given target.
-    configdir="$1"
-    target="$2"
-
-    case "${target%/*}" in
-        targets) cat "${configdir}/src/${target}" || \
-            error 1 "Target ${target} does not exist!";;
-        packages|toolchain) # Extract the depends from the PKGBUILD
-            if [ ! -e "${configdir}/src/${target}/PKGBUILD" ]; then
-                error 1 "No such target '${target}'!"
-            fi
-            echo "actions/setup.sh"
-            sed -n -e 's:  *: :g' -e '/# Depends:/p' \
-            < "${configdir}/src/${target}/PKGBUILD" | \
-            sed -e 's:# Depends\:::' | \
-            tr ' ' '\n' | \
-            shuf;;
-            # TODO: Nondeterminism is useful for testing, but having a flag to
-            #       turn it off would be good.
-        actions) : # Actions do not have deps.
-            ;;
-        *) error 2 "Unknown target '${target}'!"
-    esac
 }
 
 in_array() {
@@ -122,13 +98,15 @@ generate_graph() {
         to_visit=(${to_visit[@]:1})
 
         # Process the dependencies.
-        local deps="$(depends "${configdir}" "${target}")"
+        local deps="$(run_action deps "${configdir}" "${target}")"
+        # TODO: Figure out how to find out whether the call to get deps succeded
         # Add the item to the graph.
         graph["${target}"]="${deps}"
         # Add it to the to_visit list if it is not in the to_visit list or in
         # the graph.
         for dep in ${deps}; do
-            if ! (in_array "${dep}" ${to_visit[@]} || [ -n "${graph["${dep}"]}" ]); then
+            if ! (in_array "${dep}" ${to_visit[@]} || \
+                [ -n "${graph["${dep}"]}" ]); then
                 to_visit+=("${dep}")
             fi
         done
