@@ -16,6 +16,8 @@ C_RESET="\033[39;0m"
 
 # Default verboseness.
 VERBOSE="1"
+# Debug flag.
+export DEBUG="false"
 
 error() {
     local status="$1"
@@ -87,7 +89,7 @@ parseargs() {
         case "${arg}" in
             --) return;;
             -q|--quiet) VERBOSE="0";;
-            -d|--debug) VERBOSE="2";;
+            -d|--debug) export DEBUG="true"; VERBOSE="2";;
             -\?|-h|--help) echo "$0 [-?|-h|--help] [-v|--version] ${USAGE}"
                 exit 0;;
             -v|--version) echo "$(basename "$0") - ${VERSION}"
