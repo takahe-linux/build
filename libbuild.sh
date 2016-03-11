@@ -31,42 +31,68 @@ mark() {
     configdir="$1"
     target="$2"
 
-    state="$(run_action state "${configdir}" "${target}")"
-    if [ -z "${state}" ]; then
-        exit 2
-    elif [ "${state}" == "na" ]; then
-        # States are not recorded for the given target.
-        return
-    fi
-
     # Create a dir if needed.
     dir="${configdir}/build/$(dirname "${target}")"
     if [ ! -e "${dir}" ]; then
         mkdir -p "${dir}"
     fi
-    # Save the state.
-    echo "${state}" > "${configdir}/build/${target}"
+
+    printf '' > "${configdir}/build/${target}"
+
+    # Save the state for the target and all of the dependencies.
+    for dep in "${target}" $(run_action deps "${configdir}" "${target}"); do
+
+        # Find the current state.
+        state="$(run_action state "${configdir}" "${dep}")"
+        if [ -z "${state}" ]; then
+            exit 2
+        elif [ "${state}" == "na" ]; then
+            # Ignore 'na'.
+            continue
+        fi
+
+        # Save the dep and state.
+        printf "%s %s\n" "${dep}" "${state}" >> "${configdir}/build/${target}"
+    done
 }
 
 old() {
     # Return true if the given target is out of date.
-    # We consider a target to be out of date if it has changed (we ignore
-    # dependencies), so we compare the current state with the old state.
+    # We consider a target to be out of date if it has changed relative to it's
+    # old state (for instance, a file had been modified), or if one of it's
+    # dependencies has changed since the target was last updated.
+    # We do _not_ traverse down the dependency list.
     # If there is no recorded state, assume that the target is 'old'.
-    configdir="$1"
-    target="$2"
+    local configdir="$1"
+    local target="$2"
     shift 2
 
-    state="$(run_action state "${configdir}" "${target}")"
-    if [ -z "${state}" ]; then
-        exit 2
-    elif [ "${state}" == "na" ]; then
-        return 1
+    # Check that the path exists.
+    local path="${configdir}/build/${target}"
+    if [ ! -f "${path}" ]; then
+        # No file; default to old.
+        message debug "${target} considered old; no file"
+        return 0
     fi
-    if [ -f "${configdir}/build/${target}" ] && \
-        [ "${state}" == "$(cat "${configdir}/build/${target}")" ]; then
-        return 1
-    fi
+
+    # Check that the target and all deps are up to date.
+    for dep in "${target}" $(run_action deps "${configdir}" "${target}"); do
+        # Find the current state.
+        state="$(run_action state "${configdir}" "${dep}")"
+        if [ -z "${state}" ]; then
+            exit 2
+        elif [ "${state}" == "na" ]; then
+            continue
+        fi
+        
+        # Compare the current to the saved state.
+        grep "^${dep} ${state}\$" "${path}" > /dev/null
+        if [ "$?" -ne 0 ]; then
+            message debug "${target} is out of date; ${dep} old (${state})"
+            return 0
+        fi
+    done
+    return 1
 }
 
 in_array() {
