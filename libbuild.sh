@@ -13,7 +13,7 @@ run_action() {
     local target="$3"
     shift 3
 
-    path="$(dirname "$(realpath "$0")")/targets/${target%/*}"
+    path="$(dirname "$(realpath "$0")")/targets/${target%%/*}"
 
     if [ -d "${path}" ]; then
         if [ -e "${path}/${action}" ]; then
@@ -23,7 +23,7 @@ run_action() {
             error 1 "Target '${target}' does not support action ${action}!"
         fi
     else
-        error 1 "Unknown target type '${target%/*}'!"
+        error 1 "Unknown target type '${target%%/*}'!"
     fi
 }
 

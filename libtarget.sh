@@ -5,6 +5,8 @@ configdir="$1"
 target="$2"
 shift 2
 
+prefix="${target%%/*}"
+
 exists() {
     # Check that the given file exists.
     if [ ! -f "$1" ]; then
