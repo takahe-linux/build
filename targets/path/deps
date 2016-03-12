@@ -1,0 +1,24 @@
+#!/usr/bin/sh
+#
+# Extract the dependencies for the given path.
+#
+# Author:   Alastair Hughes
+# Contact:  < hobbitalastair at yandex dot com >
+
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
+
+if [ "${name:0:1}" != "/" ]; then
+    path="${configdir}/${name}"
+else
+    path="${name}"
+fi
+exists "${path}" || exit "$?"
+
+# If it is a file, then extract the dependencies from it.
+if [ -f "${path}" ]; then
+    sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
+        sed -e 's:# Depends\:::' | \
+        tr ' ' '\n' | \
+        randomise
+fi

@@ -1,0 +1,23 @@
+#!/usr/bin/sh
+#
+# Print the current state of the given path.
+# 
+# Author:   Alastair Hughes
+# Contact:  < hobbitalastair at yandex dot com >
+
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
+
+if [ "${name:0:1}" != "/" ]; then
+    path="${configdir}/${name}"
+else
+    path="${name}"
+fi
+
+if [ -f "${path}" ]; then
+    sum_file "${path}" || exit $?
+else
+    # Ignore states for directories.
+    exists "${path}" || exit "$?"
+    echo "na"
+fi

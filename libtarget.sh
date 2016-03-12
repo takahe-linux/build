@@ -6,10 +6,11 @@ target="$2"
 shift 2
 
 prefix="${target%%/*}"
+name="${target#*/}"
 
 exists() {
     # Check that the given file exists.
-    if [ ! -f "$1" ]; then
+    if [ ! -e "$1" ]; then
         error 1 "No such target '${target}'!"
     fi
 }
