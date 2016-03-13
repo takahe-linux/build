@@ -44,6 +44,11 @@ message() {
                 "${level}" > /dev/stderr
             exit 1;;
     esac
+
+    # Add a timestamp if debug is set.
+    if "${DEBUG}"; then
+        fmt="$(date '+%m:%S') ${fmt}"
+    fi
     
     # Print the messages if the verboseness is high enough.
     if [ "${VERBOSE}" -ge "${min_level}" ]; then
@@ -68,7 +73,7 @@ check_configdir() {
         fi
     done
     if [ ! -e "${configfile}" ]; then
-        error 1 "$(printf "${template}" "${configfile}")"
+        error 1 "'${configfile}' does not exist!"
     fi
 
 }
