@@ -13,7 +13,7 @@ if "${DEBUG}"; then
     exit
 fi
 
-exists "${configdir}/src/${target}/PKGBUILD"
+exists "${configdir}/src/${name}/PKGBUILD"
 
 # Create the makepkg config file.
 config="$(mktemp "${TMPDIR:-/tmp}/mksrctar.XXXXXXXX")"
@@ -24,6 +24,6 @@ SRCPKGDEST="${configdir}/srctar"
 EOF
 
 # Run makepkg.
-pushd "${configdir}/src/${pkg}" > /dev/null
+pushd "${configdir}/src/${name}" > /dev/null
 makepkg -A --config "${config}" --printsrcinfo > .SRCINFO || \
     exit "$?"
