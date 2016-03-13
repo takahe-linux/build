@@ -1,0 +1,5 @@
+#!/usr/bin/sh
+source "$(dirname "$0")/../../libmain.sh"
+source "$(dirname "$0")/../../libtarget.sh"
+path="${configdir}/src/${target}/.SRCINFO"
+sum_file "${path}" || exit $?
