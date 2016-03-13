@@ -45,8 +45,8 @@ mark() {
 
         # Find the current state.
         state="${states["${dep}"]}"
-        if [ "${state}" == "na" ]; then
-            # Ignore 'na'.
+        if [ "${state}" == "na" ] || [ "${state}" == "old" ]; then
+            # Ignore 'na' and 'old'.
             continue
         fi
 
@@ -81,6 +81,10 @@ old() {
         if [ "${state}" == "na" ]; then
             # Ignore 'na'.
             continue
+        elif [ "${state}" == "old" ]; then
+            # Arbitary 'old'
+            message debug "${target} is out of date; ${dep} is old"
+            return 0
         fi
         
         # Compare the current to the saved state.
@@ -145,7 +149,7 @@ generate_states() {
         # For the target, generate and save the current state.
         state="$(run_action state "${configdir}" "${target}")"
         if [ -z "${state}" ]; then
-            exit 2
+            error 2 "Invalid state returned from '${target}'!"
         fi
         states["${target}"]="${state}"
     done
