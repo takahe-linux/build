@@ -17,8 +17,11 @@ exists() {
 
 sum_file() {
     # Print a hash for the given file.
-    exists "$1"
-    md5sum "$1" | cut -d' ' -f1
+    if [ ! -f "$1" ]; then
+        echo "old"
+    else
+        md5sum "$1" | cut -d' ' -f1
+    fi
 }
 
 randomise() {

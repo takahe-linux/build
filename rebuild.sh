@@ -46,6 +46,7 @@ rebuild() {
                 message error "Failed to build '$1'!"
                 targets["$1"]="fail"
             else
+                update_state "${configdir}" "$1"
                 mark "${configdir}" "$1" || \
                     error "$?" "Invalid target '$1'!"
                 targets["$1"]="rebuilt"

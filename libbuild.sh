@@ -27,6 +27,18 @@ run_action() {
     fi
 }
 
+update_state() {
+    # Update the state for the given target.
+    configdir="$1"
+    target="$2"
+
+    state="$(run_action state "${configdir}" "${target}")"
+    if [ -z "${state}" ]; then
+        error 2 "Invalid state returned for '${target}'!"
+    fi
+    states["${target}"]="${state}"
+}
+
 mark() {
     # Mark the given target as up-to-date.
     configdir="$1"
@@ -147,11 +159,7 @@ generate_states() {
 
     for target in ${!graph[@]}; do
         # For the target, generate and save the current state.
-        state="$(run_action state "${configdir}" "${target}")"
-        if [ -z "${state}" ]; then
-            error 2 "Invalid state returned from '${target}'!"
-        fi
-        states["${target}"]="${state}"
+        update_state "${configdir}" "${target}"
     done
 }
 
