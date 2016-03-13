@@ -14,10 +14,5 @@ else
     path="${name}"
 fi
 
-if [ -f "${path}" ]; then
-    sum_file "${path}" || exit $?
-else
-    # Ignore states for directories.
-    exists "${path}" || exit "$?"
-    echo "na"
-fi
+exists "${path}" || exit "$?"
+sum_file "${path}" || exit "$?"

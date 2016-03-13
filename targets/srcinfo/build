@@ -15,15 +15,7 @@ fi
 
 exists "${configdir}/src/${name}/PKGBUILD"
 
-# Create the makepkg config file.
-config="$(mktemp "${TMPDIR:-/tmp}/mksrctar.XXXXXXXX")"
-trap "rm '${config}'" EXIT
-cat > "${config}" << EOF
-source /etc/makepkg.conf
-SRCPKGDEST="${configdir}/srctar"
-EOF
-
 # Run makepkg.
 pushd "${configdir}/src/${name}" > /dev/null
-makepkg -A --config "${config}" --printsrcinfo > .SRCINFO || \
+makepkg -A --printsrcinfo > .SRCINFO || \
     exit "$?"

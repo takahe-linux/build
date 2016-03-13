@@ -8,8 +8,85 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 
+set -e
+
 if "${DEBUG}"; then
     message debug "Built ${target}"
-else
-    error 1 "Building ${target} is not implemented!"
+    exit
 fi
+
+path="${configdir}/src/${target}/PKGBUILD"
+exists "${path}"
+
+export rootdir="$(realpath "${configdir}/src")"
+export PATH="${rootdir}/scripts:${PATH}"
+
+# We start by extracting the list of packages from the PKGBUILD.
+hostdeps=""
+rootdeps=""
+for dep in $(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
+    sed -e 's:# Depends\:::'); do
+    # Figure out what to do with the given dep.
+    # TODO: This is a bit of a hack... a better way would be brilliant!
+    #       Groups? Pacman would then deal with it, if I had a repo set up.
+    case "${dep}" in
+        targets/toolchain) hostdeps+=" toolchain/binutils toolchain/gcc";;
+        toolchain/*) hostdeps+=" ${dep}";;
+        packages/*) rootdeps+=" ${dep}";;
+        *) error 1 "Unknown dependency '${dep}'!"
+    esac
+done
+
+# Set some variables...
+if [ "${prefix}" == "packages" ]; then
+    db="target"
+else
+    db="host"
+    makepkgargs="-sr"
+fi
+
+# We then install all of the host packages.
+# We don't use --noconfirm because we have to install conflicting packages...
+if [ -n "${hostdeps}" ]; then
+    # TODO: This is completely broken...
+    # We don't use --noconfirm because we have to install conflicting
+    # packages...
+    yes 'y' | \
+        sudo pacman --config "${configdir}/pkgs/host.conf" \
+            -Sy "$(echo "${hostdeps}" | sed -e 's:toolchain/:mips-linux-musl-:g')" || \
+        error "$?" "Failed to install packages!"
+fi
+
+# We then create the system root.
+"${configdir}/src/actions/setup.sh"
+# Clean up after ourselves...
+trap "$(realpath "${configdir}")/src/actions/clean.sh; \
+    rm -f '/tmp/mips-linux-musl.img'" EXIT
+
+# Install all of the sysroot packages.
+# TODO: This is completely broken...
+if [ -n "${hostdeps}" ]; then
+    # TODO: This is completely broken...
+    # We don't use --noconfirm because we have to install conflicting
+    # packages...
+    yes 'y' | \
+        sudo pacman --config "${configdir}/pkgs/target.conf" \
+            -Sy "$(echo "${rootdeps}" | sed -e 's:packages/::g')" || \
+        error "$?" "Failed to install packages!"
+fi
+
+# Rebuild the package.
+pushd "${configdir}/src/${target}" > /dev/null
+yes 'y' | \
+    makepkg --config ../makepkg.conf "${makepkgargs}" -LcfC || \
+        error "$?" "Build failed!"
+popd > /dev/null
+
+# Add the package to the repo database.
+pushd "${configdir}/pkgs/${db}" > /dev/null
+repo-add -n -R "./${db}.db.tar.gz" \
+    $("../../src/actions/pkgnames.sh" "${target}") 2>&1 | \
+    grep -e 'ERROR' > /dev/null && \
+    error "1" "Failed to add the package to the database"
+popd > /dev/null
+

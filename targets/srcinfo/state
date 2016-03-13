@@ -2,9 +2,4 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 
-path="${configdir}/src/${name}/.SRCINFO"
-if [ ! -e "${path}" ]; then
-    echo "old"
-else
-    sum_file "${path}" || exit "$?"
-fi
+sum_file "${configdir}/src/${name}/.SRCINFO" || exit "$?"

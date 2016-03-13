@@ -13,12 +13,9 @@ if [ "${name:0:1}" != "/" ]; then
 else
     path="${name}"
 fi
-exists "${path}" || exit "$?"
 
-# If it is a file, then extract the dependencies from it.
-if [ -f "${path}" ]; then
-    sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
-        sed -e 's:# Depends\:::' | \
-        tr ' ' '\n' | \
-        randomise
-fi
+exists "${path}" || exit "$?"
+sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
+    sed -e 's:# Depends\:::' | \
+    tr ' ' '\n' | \
+    randomise

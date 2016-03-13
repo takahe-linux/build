@@ -13,17 +13,17 @@ if "${DEBUG}"; then
     exit
 fi
 
-exists "${configdir}/src/${target}/PKGBUILD"
+exists "${configdir}/src/${name}/PKGBUILD"
 
 # Create the makepkg config file.
 config="$(mktemp "${TMPDIR:-/tmp}/mksrctar.XXXXXXXX")"
 trap "rm '${config}'" EXIT
 cat > "${config}" << EOF
 source /etc/makepkg.conf
-SRCPKGDEST="${configdir}/srctar"
+SRCPKGDEST="$(realpath "${configdir}")/srctar"
 EOF
 
 # Run makepkg.
-pushd "${configdir}/src/${pkg}" > /dev/null
-makepkg -f --config "${config}" --allsource 2>&1 > /dev/null || \
+pushd "${configdir}/src/${name}" > /dev/null
+makepkg -f -m --config "${config}" --allsource 2> /dev/null || \
     exit "$?"
