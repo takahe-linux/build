@@ -60,16 +60,14 @@ check_configdir() {
     # Check the configuration directory.
 
     local configdir="$@"
-    local configfile="${configdir}/config.sh"
-    local builddir="${configdir}/build/"
-    local pkgdir="${configdir}/pkgs/"
+    local configfile="${configdir}/config"
 
     if [ "${configdir}" == "" ]; then
         error 1 "Config dir not given!"
     fi
-    for dir in "${configdir}" "${builddir}" "${pkgdir}"; do
-        if [ ! -d "${dir}" ]; then
-            error 1 "'${dir}' does not exist!"
+    for dir in build logs src pkgs srctar; do
+        if [ ! -d "${configdir}/${dir}" ]; then
+            error 1 "'${configdir}/${dir}' does not exist!"
         fi
     done
     if [ ! -e "${configfile}" ]; then
