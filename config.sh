@@ -14,14 +14,14 @@ source "$(dirname "$(realpath "$0")")/libbuild.sh"
 main() {
     # Sed the var out of the config file.
 
-    config="$1"
-    var="$2"
+    local config="$1"
+    local var="$2"
 
     if [ ! -f "${config}" ]; then
         error 1 "'${config}' is not a file!"
     fi
 
-    lines="$(sed -n -e "/^${var}=.*/p" < "${config}" | wc -l)" 
+    local lines="$(sed -n -e "/^${var}=.*/p" < "${config}" | wc -l)" 
     if [ "${lines}" -eq 0 ]; then
         error 2 "'${var}' not found in ${config}!"
     elif [ "${lines}" -gt 1 ]; then
@@ -31,7 +31,7 @@ main() {
 }
 
 # Parse the arguments.
-config="" # Set the initial config dir.
+config="" # The config file.
 var="" # The variable to extract. 
 parseargs $@ # Initial argument parse.
 # Manual argument parse.
