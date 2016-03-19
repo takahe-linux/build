@@ -29,10 +29,12 @@ run_action() {
 
 update_state() {
     # Update the state for the given target.
+    local configdir target state
     configdir="$1"
     target="$2"
 
-    state="$(run_action state "${configdir}" "${target}")"
+    state="$(run_action state "${configdir}" "${target}" || exit "$?" \
+        | tr '\n' ' ')" || exit "$?"
     if [ -z "${state}" ]; then
         error 2 "Invalid state returned for '${target}'!"
     fi
@@ -87,6 +89,7 @@ old() {
     fi
 
     # Check that the target and all deps are up to date.
+    local state
     for dep in "${target}" ${graph["${target}"]}; do
         # Find the current state.
         state="${states["${dep}"]}"
@@ -131,6 +134,7 @@ generate_graph() {
     shift
 
     local to_visit=($@)     # Nodes to visit
+    local target deps
 
     while [ "${#to_visit[@]}" -gt 0 ]; do
         # Visit a target.
@@ -138,7 +142,7 @@ generate_graph() {
         to_visit=(${to_visit[@]:1})
 
         # Process the dependencies.
-        local deps="$(run_action deps "${configdir}" "${target}")"
+        deps="$(run_action deps "${configdir}" "${target}")" || exit "$?"
         # TODO: Figure out how to find out whether the call to get deps succeded
         # Add the item to the graph.
         graph["${target}"]="${deps}"
@@ -166,8 +170,8 @@ generate_states() {
 walk() {
     # Walk each target in order, using the prebuilt graph.
     # The traversal is depth first, post order.
-    configdir="$1"
-    func="$2"
+    local configdir="$1"
+    local func="$2"
     shift 2
 
     # We maintain a stack.
@@ -181,7 +185,7 @@ walk() {
         if [ -n "${visited["${target}"]}" ]; then
             continue
         fi
-        stack=("${target}") # Initialise the stack.
+        local stack=("${target}") # Initialise the stack.
         # Walk the graph.
         while [ "${#stack}" -gt 0 ]; do
             local current="${stack[-1]}"
