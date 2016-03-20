@@ -19,6 +19,7 @@ exists "${configdir}/src/${name}/PKGBUILD"
 config="$(mktemp "${TMPDIR:-/tmp}/mksrctar.XXXXXXXX")"
 trap "rm '${config}'" EXIT
 cat > "${config}" << EOF
+source ../makepkg.conf
 source /etc/makepkg.conf
 SRCPKGDEST="$(realpath "${configdir}")/srctar"
 EOF
