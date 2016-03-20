@@ -17,5 +17,5 @@ exists "${configdir}/src/${name}/PKGBUILD"
 
 # Run makepkg.
 pushd "${configdir}/src/${name}" > /dev/null
-makepkg -A --printsrcinfo > .SRCINFO || \
+makepkg --config ../makepkg.conf -A --printsrcinfo > .SRCINFO || \
     exit "$?"
