@@ -2,8 +2,13 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 
+exists "${configdir}/src/${name}/PKGBUILD"
 srcinfo="${configdir}/src/${name}/.SRCINFO"
-exists "${srcinfo}"
+if [ ! -f "${srcinfo}" ]; then
+    # Bail if the .SRCINFO does not exist at this time.
+    echo 'old'
+    exit
+fi
 pkgbase="$(sed -n "${srcinfo}" -e '/^pkgbase = /p' | sed -e 's:.*= ::')"
 pkgver="$(sed -n "${srcinfo}" -e '/pkgver = /p' | sed -e 's:.*= ::')"
 pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
