@@ -1,13 +1,28 @@
 #!/usr/bin/sh
-#
-# Print the current state of the given target.
-# 
-# Author:   Alastair Hughes
-# Contact:  < hobbitalastair at yandex dot com >
 
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
+source "$(dirname "$0")/../../libpackage.sh"
 
+# We take the checksum of the PKGBUILD, which should change if anything else
+# does.
 path="${configdir}/src/${target}/PKGBUILD"
 exists "${path}"
-sum_file "${path}" || exit $?
+sum="$(sum_file "${path}")" || exit $?
+
+message debug "Checking ${path}"
+# We also need to take the sum of the built package.
+packages="$(pkgdirpackages "${configdir}" "${target}")" || \
+    error "$?" "Failed to generate a list of packages for '${target}'!"
+for pkg in ${packages}; do
+    message debug "Trying to sum ${configdir}/pkgs/${pkg}"
+    newsum="$(sum_file "${configdir}/pkgs/${pkg}")"
+    if [ "${newsum}" == "old" ]; then
+        # Bail if the package is old.
+        printf "old"
+        exit 0
+    fi
+    sum+=" ${newsum}"
+done
+
+printf "${sum}"
