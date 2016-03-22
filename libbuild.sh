@@ -15,6 +15,8 @@ run_action() {
 
     path="$(dirname "$(realpath "$0")")/targets/${target%%/*}"
 
+    message debug "Running '${path}/${action}' for '${target}'..."
+
     if [ -d "${path}" ]; then
         if [ -e "${path}/${action}" ]; then
             # Run the script to find the current state.
