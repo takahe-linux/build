@@ -8,17 +8,19 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 
+# We depend on the source tarball and the srcinfo.
+printf "srctar/${target}\n"
+printf "srcinfo/${target}\n"
+
+# We also depend on some other packages.
+# TODO: Figure out how to extract the dependency information from the
+#       .SRCINFO - including host/target dependencies, local vs native system
+#       packages, and other such things.
+#       Note that this may be problematic - does the build system recheck
+#       dependencies, or at least handle them changing as dependencies are
+#       rebuilt?
 path="${configdir}/src/${target}/PKGBUILD"
-exists "${path}"
-
-# We use 'fake' depends because the PKGBUILD can't tell the difference between
-# host and target depends, and also because otherwise there is no distinction
-# between the local and system packages.
-# TODO: Figure out how to use the .SRCINFO file instead (note that this would
-#       involve an extra dependency on the .SRCINFO file)
-# TODO: Figure out provides/make/install/host/target/etc deps...
-
-echo "path/src/actions/setup.sh"
+exists "${path}" || exit "$?"
 sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
     sed -e 's:# Depends\:::' | \
     tr ' ' '\n' | \
