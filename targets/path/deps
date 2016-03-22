@@ -15,7 +15,3 @@ else
 fi
 
 exists "${path}" || exit "$?"
-sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
-    sed -e 's:# Depends\:::' | \
-    tr ' ' '\n' | \
-    randomise
