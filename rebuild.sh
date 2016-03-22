@@ -47,9 +47,14 @@ rebuild() {
                 targets["$1"]="fail"
             else
                 update_state "${configdir}" "$1"
-                mark "${configdir}" "$1" || \
-                    error "$?" "Invalid target '$1'!"
-                targets["$1"]="rebuilt"
+                if [ "${states["$1"]}" == "old" ]; then
+                    message error "Built target '$1' is still 'old'!"
+                    targets["$1"]="fail"
+                else
+                    mark "${configdir}" "$1" || \
+                        error "$?" "Invalid target '$1'!"
+                    targets["$1"]="rebuilt"
+                fi
             fi;;
         skip) message warn "Skipping $1";;
         *) message info "$1 is up to date";;
