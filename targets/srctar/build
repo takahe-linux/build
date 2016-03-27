@@ -9,6 +9,7 @@ source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 source "$(dirname "$0")/../../libpackage.sh"
 
-exists "${configdir}/src/${name}/PKGBUILD"
-callmakepkg "${configdir}" "${name%%/*}" "${name#*/}" -f -m --allsource || \
-    exit "$?"
+path="${configdir}/src/${name}"
+exists "${path}/PKGBUILD"
+callmakepkg "${configdir}" "${name%%/*}" "${path}" -f -m \
+    --allsource || exit "$?"

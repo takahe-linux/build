@@ -8,11 +8,11 @@ callmakepkg() {
     # Call makepkg locally.
     local configdir="$(realpath "$1")"
     local prefix="$2"
-    local name="$3"
+    local path="$3"
     shift 3
 
-    pushd "${configdir}/src/${prefix}/${name}" > /dev/null 2> /dev/null || \
-        error 1 "'${configdir}/src/${prefix}/${name}' does not exist!"
+    pushd "${path}" > /dev/null || \
+        exit 1
     # Create the log file, if needed.
     if [ -z "${LOGFILE}" ]; then
         local log="$(mktemp "${TMPDIR:-/tmp}/makepkglog.XXXXXXXX")" || \
@@ -30,7 +30,7 @@ callmakepkg() {
         error 1 "Failed to make the makepkgconf temporary file!"
     cleanup+="rm -f '${makepkgconf}'; "
     trap "${cleanup}" EXIT
-    genmakepkgconf "${configdir}" "${prefix}" "${name}" > "${makepkgconf}"
+    genmakepkgconf "${configdir}" "${prefix}" > "${makepkgconf}"
 
     # Run makepkg.
     makepkg --config "${makepkgconf}" "$@" 2> "${log}" > "${log}"
@@ -40,9 +40,6 @@ callmakepkg() {
         # Print the log and exit.
         message error "makepkg failed! last 50 lines of log:"
         tail -n 50 "${log}" > /dev/stderr
-        if [ -n "${target}" ]; then
-            message error "${target} failed!"
-        fi
         exit "${status}"
     fi
 
@@ -57,7 +54,6 @@ genmakepkgconf() {
     #       which it clearly doesn't.
     local configdir="$1"
     local prefix="$2"
-    local name="$3"
     cat << EOF
 source "${configdir}/src/${prefix}/makepkg.conf"
 SRCPKGDEST="${configdir}/srctar"

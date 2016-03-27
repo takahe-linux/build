@@ -13,7 +13,31 @@ source "$(dirname "$0")/../../libpackage.sh"
 # We need to do quite a bit here...
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
+
+# Set configdir to the realpath version.
+configdir="$(realpath "${configdir}")" || \
+    error 1 "Failed to get the realpath of the given config dir!"
+
+# Find the source tarball, and extract it to a temporary dir.
+# TODO: Figure out how to use a config file to determine a suitable name for
+#       the basedir to avoid clashes.
+# Make the directory for the source tarball.
+basedir="${TMPDIR:-/tmp}/build-package/"
+if [ ! -d "${basedir}" ]; then
+    mkdir "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
+fi
+# Find the source tarball.
+srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
+    error 1 "Failed to find a source tarball for '${target}'!"
+pushd "${basedir}" > /dev/null
+# Extract the source tar.
+srctardir="${basedir}/$(echo "${srctar}" | rev | cut -d'-' -f3- | rev)"
+bsdtar -xf "${configdir}/srctar/${srctar}" || \
+    error 1 "Failed to extract '${configdir}/srctar/${srctar}'!"
+
 # Build the package.
 # TODO: This needs work... dependency resolution, for instance.
-callmakepkg "${configdir}" "${prefix}" "${name}" -cCf || exit "$?"
+callmakepkg "${configdir}" "${prefix}" "${srctardir}" -cCf || exit "$?"
 
+# Clean up the build dir.
+rm -rf "${srctardir}"
