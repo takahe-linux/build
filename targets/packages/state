@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
@@ -12,6 +12,11 @@ sum="$(sum_file "${path}")" || exit $?
 
 message debug "Checking ${path}"
 # We also need to take the sum of the built package.
+if [ ! -f "${configdir}/src/${target}/.SRCINFO" ]; then
+    # Bail early if there is no .SRCINFO.
+    printf "old"
+    exit 0
+fi
 packages="$(pkgdirpackages "${configdir}" "${target}")" || \
     error "$?" "Failed to generate a list of packages for '${target}'!"
 for pkg in ${packages}; do
