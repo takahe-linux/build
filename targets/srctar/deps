@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 echo "srcinfo/${name}"
