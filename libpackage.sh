@@ -11,18 +11,25 @@ callmakepkg() {
     local name="$3"
     shift 3
 
-    pushd "${configdir}/src/${prefix}/${name}" > /dev/null
-    # Create the log file.
-    local log="$(mktemp "${TMPDIR:-/tmp}/makepkglog.XXXXXXXX")" || \
-        error 1 "Failed to make the temporary log file!"
-    trap "rm -f '${log}'" EXIT
+    pushd "${configdir}/src/${prefix}/${name}" > /dev/null 2> /dev/null || \
+        error 1 "'${configdir}/src/${prefix}/${name}' does not exist!"
+    # Create the log file, if needed.
+    if [ -z "${LOGFILE}" ]; then
+        local log="$(mktemp "${TMPDIR:-/tmp}/makepkglog.XXXXXXXX")" || \
+            error 1 "Failed to make the temporary log file!"
+        cleanup+="rm -f '${log}'; "
+        trap "${cleanup}" EXIT
+    else
+        local log="${LOGFILE}"
+    fi
 
     # Generate the config file.
     # We can't use a here-document because that gets lost somewhere when
     # makepkg uses fakechroot.
     local makepkgconf="$(mktemp "${TMPDIR:-/tmp}/makepkgconf.XXXXXXXX")" || \
         error 1 "Failed to make the makepkgconf temporary file!"
-    trap "rm -f '${makepkgconf}'" EXIT
+    cleanup+="rm -f '${makepkglog}'; "
+    trap "${cleanup}" EXIT
     genmakepkgconf "${configdir}" "${prefix}" "${name}" > "${makepkgconf}"
 
     # Run makepkg.
@@ -37,10 +44,11 @@ callmakepkg() {
             message error "${target} failed!"
         fi
         exit "${status}"
-    else
-        rm -f "${log}"
-        rm -f "${makepkgconf}"
     fi
+
+    # Clean up.
+    ${cleanup}
+    popd > /dev/null
 }
 
 genmakepkgconf() {
