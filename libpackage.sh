@@ -28,7 +28,7 @@ callmakepkg() {
     # makepkg uses fakechroot.
     local makepkgconf="$(mktemp "${TMPDIR:-/tmp}/makepkgconf.XXXXXXXX")" || \
         error 1 "Failed to make the makepkgconf temporary file!"
-    cleanup+="rm -f '${makepkglog}'; "
+    cleanup+="rm -f '${makepkgconf}'; "
     trap "${cleanup}" EXIT
     genmakepkgconf "${configdir}" "${prefix}" "${name}" > "${makepkgconf}"
 
