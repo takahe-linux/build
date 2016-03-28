@@ -41,7 +41,7 @@ message() {
         warn) fmt="${C_WARN}>>>${C_RESET} %s\n";;
         error) fmt="${C_ERR}!!!${C_BOLD} %s${C_RESET}\n";;
         *) printf "${C_ERR}BUG${C_RESET} Unknown message format '%s'!\n" \
-                "${level}" > /dev/stderr
+                "${level}" >> /dev/stderr
             exit 1;;
     esac
 
@@ -52,7 +52,7 @@ message() {
     
     # Print the messages if the verboseness is high enough.
     if [ "${VERBOSE}" -ge "${min_level}" ]; then
-        printf "${fmt}" "$@" > /dev/stderr
+        printf "${fmt}" "$@" >> /dev/stderr
     fi
 }
 
