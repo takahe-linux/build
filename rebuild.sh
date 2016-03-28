@@ -47,7 +47,7 @@ rebuild() {
             run_action build "${configdir}" "$1" > "${buildlog}" 2>&1
             if [ "$?" -ne 0 ]; then
                 message error "Last 10 lines of the build log (${buildlog}):"
-                tail -n 10 "${buildlog}" > /dev/stderr
+                tail -n 10 "${buildlog}" | sed 's:^:    :' > /dev/stderr
                 message error "Failed to build '$1'!"
                 targets["$1"]="fail"
             else
