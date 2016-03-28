@@ -41,8 +41,13 @@ rebuild() {
     targets["$1"]="${current_state}"
     case "${current_state}" in
         old) message warn "$1 is out of date"
-            run_action build "${configdir}" "$1"
+            # Create a temporary document for the build log.
+            local buildlog="$(mktemp "${TMPDIR:-/tmp}/build-$(echo "$1" \
+                | tr '/' '_')".XXXXXXXX)"
+            run_action build "${configdir}" "$1" > "${buildlog}" 2>&1
             if [ "$?" -ne 0 ]; then
+                message error "Last 10 lines of the build log (${buildlog}):"
+                tail -n 10 "${buildlog}" > /dev/stderr
                 message error "Failed to build '$1'!"
                 targets["$1"]="fail"
             else
@@ -51,6 +56,7 @@ rebuild() {
                     message error "Built target '$1' is still 'old'!"
                     targets["$1"]="fail"
                 else
+                    rm -f "${buildlog}"
                     mark "${configdir}" "$1" || \
                         error "$?" "Invalid target '$1'!"
                     targets["$1"]="rebuilt"
