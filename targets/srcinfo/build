@@ -9,8 +9,12 @@ source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 source "$(dirname "$0")/../../libpackage.sh"
 
+configdir="$(realpath "${configdir}")"
 path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
 # TODO: We use -A here; this is a bug in makepkg...
-callmakepkg "${configdir}" "${name%%/*}" "${path}" -A \
-    --printsrcinfo > "${path}/.SRCINFO" || exit "$?"
+pushd "${path}" || exit 1
+makepkg -A --printsrcinfo --config /dev/stdin > "${path}/.SRCINFO" << EOF
+    source '${configdir}/src/${name%%/*}/makepkg.conf'
+EOF
+exit "$?"
