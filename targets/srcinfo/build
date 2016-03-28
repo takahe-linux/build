@@ -12,6 +12,5 @@ source "$(dirname "$0")/../../libpackage.sh"
 path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
 # TODO: We use -A here; this is a bug in makepkg...
-LOGFILE=".SRCINFO" \
-    callmakepkg "${configdir}" "${name%%/*}" "${path}" -A --printsrcinfo || \
-    exit "$?"
+callmakepkg "${configdir}" "${name%%/*}" "${path}" -A \
+    --printsrcinfo > "${path}/.SRCINFO" || exit "$?"

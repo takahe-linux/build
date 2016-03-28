@@ -11,40 +11,20 @@ callmakepkg() {
     local path="$3"
     shift 3
 
-    pushd "${path}" > /dev/null || \
-        exit 1
-    # Create the log file, if needed.
-    if [ -z "${LOGFILE}" ]; then
-        local log="$(mktemp "${TMPDIR:-/tmp}/makepkglog.XXXXXXXX")" || \
-            error 1 "Failed to make the temporary log file!"
-        cleanup+="rm -f '${log}'; "
-        trap "${cleanup}" EXIT
-    else
-        local log="${LOGFILE}"
-    fi
-
+    pushd "${path}" > /dev/null || exit 1
     # Generate the config file.
     # We can't use a here-document because that gets lost somewhere when
     # makepkg uses fakeroot.
     local makepkgconf="$(mktemp "${TMPDIR:-/tmp}/makepkgconf.XXXXXXXX")" || \
         error 1 "Failed to make the makepkgconf temporary file!"
-    cleanup+="rm -f '${makepkgconf}'; "
-    trap "${cleanup}" EXIT
+    trap "rm -f '${makepkgconf}'" EXIT
     genmakepkgconf "${configdir}" "${prefix}" > "${makepkgconf}"
 
     # Run makepkg.
-    makepkg --config "${makepkgconf}" "$@" > "${log}" 2>&1
-    # Bail as appropriate...
-    local status="$?"
-    if [ "${status}" -ne 0 ]; then
-        # Print the log and exit.
-        message error "makepkg failed! last 50 lines of log:"
-        tail -n 50 "${log}" > /dev/stderr
-        exit "${status}"
-    fi
+    makepkg --config "${makepkgconf}" "$@" || exit "$?"
 
     # Clean up.
-    ${cleanup}
+    rm -f "${makepkgconf}"
     popd > /dev/null
 }
 
