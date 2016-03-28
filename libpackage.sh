@@ -25,7 +25,7 @@ callmakepkg() {
 
     # Generate the config file.
     # We can't use a here-document because that gets lost somewhere when
-    # makepkg uses fakechroot.
+    # makepkg uses fakeroot.
     local makepkgconf="$(mktemp "${TMPDIR:-/tmp}/makepkgconf.XXXXXXXX")" || \
         error 1 "Failed to make the makepkgconf temporary file!"
     cleanup+="rm -f '${makepkgconf}'; "
@@ -33,7 +33,7 @@ callmakepkg() {
     genmakepkgconf "${configdir}" "${prefix}" > "${makepkgconf}"
 
     # Run makepkg.
-    makepkg --config "${makepkgconf}" "$@" 2> "${log}" > "${log}"
+    makepkg --config "${makepkgconf}" "$@" > "${log}" 2>&1
     # Bail as appropriate...
     local status="$?"
     if [ "${status}" -ne 0 ]; then
