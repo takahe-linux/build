@@ -71,15 +71,18 @@ fi
 mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 
 # Populate the chroot.
+chrootpacman() {
+    fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
+        --root "${basedir}" --noconfirm "$@" || \
+        error 1 "Failed to run pacman on chroot!"
+}
 # TODO: Implement properly.
 # TODO: This takes quite a while, and will redownload packages...
 #       How to fix? Tar up a chroot somewhere? Keep a local cache?
 #       This is also dependent on the local pacman.conf...
 message info "Populating the chroot..."
 mkdir -p "${basedir}/var/lib/pacman" && \
-fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
-    --root "${basedir}" --noconfirm -Syu base base-devel || \
-    error 1 "Failed to run pacman on chroot!"
+    chrootpacman -Syu base-devel
 
 # Find the source tarball.
 message info "Unpacking the source tarball..."
@@ -91,6 +94,43 @@ pushd "${basedir}" > /dev/null
 bsdtar -xf "${configdir}/srctar/${srctar}" || \
     error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
 popd > /dev/null
+
+# Dependency resolution.
+# TODO: Implement.
+#       We have to deal with host dependencies, target dependencies,
+#       and Arch (remote) dependencies.
+message info "Resolving remaining dependencies..."
+deps="$(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${srctardir}/PKGBUILD" | \
+    sed -e 's:# Depends\:::' | \
+    tr ' ' '\n')" || error "$?" "Failed to read the dependency list!"
+installpkg() {
+    pkgtype=""
+    case "$1" in
+        targets/*) for pkg in $(cat "${configdir}/src/$1"); do
+                installpkg "${pkg}" || \
+                    error "$?" "Failed to install pkg '${pkg}' with installpkg!"
+            done; return 0;;
+        packages/*) pkgtype="target";;
+        toolchain/*) pkgtype="local";;
+        *) error 1 "Unknown target '$1'";;
+    esac
+    pkgnames="$(pkgdirpackages "${configdir}" "$1")" || \
+        error "$?" "Failed to generate a list of pkgnames for '$1'!"
+    if [ "${pkgtype}" == "local" ]; then
+        chrootpacman -U ${pkgnames}
+    elif [ "${pkgtype}" == "target" ]; then
+        error 1 "Cannot yet install target packages!"
+    fi
+}
+for dep in ${deps}; do
+    installpkg "${dep}" || error "Installing the dependencies failed!"
+done
+# TODO: Avoid special casing on prefix.
+if [ "${prefix}" == "toolchain" ]; then
+    chrootpacman -S $(grep "${srctardir}/.SRCINFO" -e 'depends =' | \
+        sed -e 's:.*= ::') || \
+        error "$?" "Failed to install the local dependencies with pacman!"
+fi
 
 message info "Generating the config files..."
 # TODO: Some of these values should be custom?
@@ -139,19 +179,16 @@ EOF
 chmod +x "${basedir}/build.sh"
 
 # Build the package.
-# TODO: This needs work... dependency resolution, for instance.
-# TODO: Locally built (toolchain) packages are architecture specific, and
-#       should be dumped into a different directory?
-pushd "${srctardir}" || exit "$?"
 message info "Building the package..."
 fakechroot chroot "${basedir}" /build.sh || \
     error "$?" "Running makepkg failed!"
 
 # Copy the built packages into the pkg dir.
+# TODO: Locally built (toolchain) packages are architecture specific, and
+#       should be dumped into a different directory?
 cp "${srctardir}"/*.pkg.tar.* "${configdir}/pkgs/"
 
 # Clean up the build dir.
 message info "Cleaning up..."
-sudo umount "${basedir}"/{proc,dev} || \
-    error "$?" 'Failed to unmount a filesystem in the chroot!'
+cleanup
 rm -rf "${basedir}"
