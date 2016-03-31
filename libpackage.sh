@@ -41,7 +41,11 @@ pkgdirpackages() {
 
     # Source the makepkg.conf.
     # We need this for both PKGEXT and the expected architecture.
-    . "${configdir}/src/${pkgdir}/../makepkg.conf"
+    . /etc/makepkg.conf
+    . "${configdir}/src/config.sh"
+    if [ -f "${configdir}/src/${pkgdir}/../makepkg.conf" ]; then
+        . "${configdir}/src/${pkgdir}/../makepkg.conf"
+    fi
 
     # We just report one package.
     # TODO: Report all packages, and better handle the various corner cases.
