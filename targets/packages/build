@@ -18,26 +18,140 @@ exists "${path}/PKGBUILD" || exit "$?"
 configdir="$(realpath "${configdir}")" || \
     error 1 "Failed to get the realpath of the given config dir!"
 
-# Find the source tarball, and extract it to a temporary dir.
-# TODO: Figure out how to use a config file to determine a suitable name for
-#       the basedir to avoid clashes.
-# Make the directory for the source tarball.
-basedir="${TMPDIR:-/tmp}/build-package/"
-if [ ! -d "${basedir}" ]; then
-    mkdir "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
+# We set up a clean chroot.
+# TODO: Actually use a clean chroot...
+# TODO: What would be a clean way to do this?
+#       We have some options - devtools, arch-install-scripts (pacstrap).
+#       Either way, not particularily great.
+# TODO: We should be able to configure this - where should it be stored?
+#       In /tmp? Should chroots be persistent?
+#       What are chroots, anyway?
+# ====================
+# A chroot is a directory structure with several packages unpackaged into it.
+# By using a clean chroot, a reproducible build environment can be created,
+# while avoiding pollution from other, unwanted packages.
+#
+# ====================
+# On the host system, a clean chroot will have the base and base-devel upstream
+# packages, preferably drawn from the local cache, and any additional
+# dependencies of the package being built, drawn either from the other built
+# packages, the local cache, or from online.
+#
+# For cross-compile chroots, a clean chroot will have the base upstream
+# packages, any additional upstream packages that are required, and the
+# appropriate toolchain packages.
+# Inside of that, it will have another sysroot, which will have any additional
+# dependencies of the package being built installed.
+#
+# ====================
+# The basic scheme will be to install base (and base-devel, as needed), then
+# to manually install any prebuilt dependencies, then to pull in the remaining
+# dependencies from upstream using 'makepkg -s'.
+#
+# Note that makepkg -s will *not* work on an Takahe Linux box, so I might have
+# to either fix that or install the packages manually.
+# The clean chroot dir should be specific to this particular config dir, but
+# I haven't implemented config files yet, so...
+# We should also keep clean chroot dirs seperate for different packages?
+
+# Create the clean chroot dir.
+# TODO: Fix this so that it is different for different configs.
+#       Also add locking...
+cleanchroot="${TMPDIR:-/tmp}/builder/"
+if [ ! -e "${cleanchroot}" ]; then
+    mkdir "${cleanchroot}"
+elif [ ! -d "${cleanchroot}" ]; then
+    error 1 "Clean chroot dir '${cleanchroot}' already exists, but is not a dir!"
 fi
+# Create the basedir for this particular build.
+basedir="${cleanchroot}/${target}"
+if [ -e "${basedir}" ]; then
+    error 1 "Build dir '${basedir}' already exists!"
+fi
+mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
+
+# Populate the chroot.
+# TODO: Implement properly.
+# TODO: This takes quite a while, and will redownload packages...
+#       How to fix? Tar up a chroot somewhere? Keep a local cache?
+#       This is also dependent on the local pacman.conf...
+message info "Populating the chroot..."
+mkdir -p "${basedir}/var/lib/pacman" && \
+fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
+    --root "${basedir}" --noconfirm -Syu base base-devel || \
+    error 1 "Failed to run pacman on chroot!"
+
 # Find the source tarball.
+message info "Unpacking the source tarball..."
 srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
     error 1 "Failed to find a source tarball for '${target}'!"
-pushd "${basedir}" > /dev/null
 # Extract the source tar.
 srctardir="${basedir}/$(echo "${srctar}" | rev | cut -d'-' -f3- | rev)"
+pushd "${basedir}" > /dev/null
 bsdtar -xf "${configdir}/srctar/${srctar}" || \
-    error 1 "Failed to extract '${configdir}/srctar/${srctar}'!"
+    error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
+popd > /dev/null
+
+message info "Generating the config files..."
+# TODO: Some of these values should be custom?
+# TODO: Implement this...
+# Add the makepkg config file.
+cat "${configdir}/src/config.sh" >> "${basedir}/etc/makepkg.conf" || \
+    exit "$?"
+if [ -f "${configdir}/src/${prefix}/makepkg.conf" ]; then
+    cat "${configdir}/src/${prefix}/makepkg.conf" >> \
+        "${basedir}/etc/makepkg.conf" || \
+        exit "$?"
+fi
+# Add the pacman config file.
+cat > "${basedir}/etc/pacman.conf" << EOF
+EOF
+
+# Mount the various directories.
+# Note that this could be... fraught.
+# If we then rm -rf /dev, for example, things will go badly...
+message info "Mounting chroot directories..."
+sudo mount -t proc proc "${basedir}/proc"
+sudo mount --bind /dev "${basedir}/dev"
+cleanup() {
+    # Cleanup function.
+    failed=""
+    for fs in dev proc; do
+        if [ -d "${basedir}/${fs}" ]; then
+            sudo umount "${basedir}/${fs}" || \
+                failed+="${fs} "
+        fi
+    done
+    if [ -n "${failed}" ]; then
+        error 1 "Failed to unmount a filesystem in the chroot (${failed})"
+    fi
+}
+trap cleanup EXIT
+
+# Create the build script.
+cat > "${basedir}/build.sh" << EOF
+#!/usr/bin/bash
+# Automatically generated build script - do not modify!
+set -e
+cd "${srctardir##*/}"
+makepkg
+EOF
+chmod +x "${basedir}/build.sh"
 
 # Build the package.
 # TODO: This needs work... dependency resolution, for instance.
-callmakepkg "${configdir}" "${prefix}" "${srctardir}" -cCf || exit "$?"
+# TODO: Locally built (toolchain) packages are architecture specific, and
+#       should be dumped into a different directory?
+pushd "${srctardir}" || exit "$?"
+message info "Building the package..."
+fakechroot chroot "${basedir}" /build.sh || \
+    error "$?" "Running makepkg failed!"
+
+# Copy the built packages into the pkg dir.
+cp "${srctardir}"/*.pkg.tar.* "${configdir}/pkgs/"
 
 # Clean up the build dir.
-rm -rf "${srctardir}"
+message info "Cleaning up..."
+sudo umount "${basedir}"/{proc,dev} || \
+    error "$?" 'Failed to unmount a filesystem in the chroot!'
+rm -rf "${basedir}"
