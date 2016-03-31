@@ -52,7 +52,7 @@ message() {
     
     # Print the messages if the verboseness is high enough.
     if [ "${VERBOSE}" -ge "${min_level}" ]; then
-        printf "${fmt}" "$@" >> /dev/stderr
+        printf -- "${fmt}" "$@" >> /dev/stderr
     fi
 }
 
