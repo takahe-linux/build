@@ -99,12 +99,14 @@ popd > /dev/null
 # TODO: Implement.
 #       We have to deal with host dependencies, target dependencies,
 #       and Arch (remote) dependencies.
+# TODO: Dependencies *should* be recursively evaluated.
+# TODO: Make the distinction between build and install dependencies.
 message info "Resolving remaining dependencies..."
 deps="$(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${srctardir}/PKGBUILD" | \
     sed -e 's:# Depends\:::' | \
     tr ' ' '\n')" || error "$?" "Failed to read the dependency list!"
 installpkg() {
-    pkgtype=""
+    local pkgtype=""
     case "$1" in
         targets/*) for pkg in $(cat "${configdir}/src/$1"); do
                 installpkg "${pkg}" || \
@@ -114,12 +116,34 @@ installpkg() {
         toolchain/*) pkgtype="local";;
         *) error 1 "Unknown target '$1'";;
     esac
-    pkgnames="$(pkgdirpackages "${configdir}" "$1")" || \
+    # TODO: Find the dependencies of the current target, and install them.
+    local path="${configdir}/src/$1/PKGBUILD"
+    for pkg in $(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
+        sed -e 's:# Depends\:::' | \
+        tr ' ' '\n'); do
+        message info "Installing the dependencies of $1..."
+        installpkg "${pkg}" || \
+            error "$?" "Failed to install '${pkg}', a dependency of '$1'!"
+    done
+    message info "Installing $1..."
+    # TODO: We do not recursively evaluate dependencies!
+    local pkgnames="$(pkgdirpackages "${configdir}" "$1")" || \
         error "$?" "Failed to generate a list of pkgnames for '$1'!"
     if [ "${pkgtype}" == "local" ]; then
-        chrootpacman -U ${pkgnames}
+        chrootpacman -U "${configdir}/pkgs/${pkgnames}"
     elif [ "${pkgtype}" == "target" ]; then
-        error 1 "Cannot yet install target packages!"
+        sysroot="${basedir}/opt/mips-linux-musl/sysroot"
+        if [ ! -d "${sysroot}/var/lib/pacman" ]; then
+            mkdir -p "${sysroot}/var/lib/pacman"
+        fi
+        # TODO: Don't use a hardcoded sysroot path...
+        # TODO: This relies on pkgnames only returning a single package name.
+        fakechroot fakeroot pacman -U --noconfirm --arch 'mips' \
+            --root "${basedir}/opt/mips-linux-musl/sysroot" \
+            "${configdir}/pkgs/${pkgnames}" || \
+            error 1 "Failed to install packages to sysroot: ${pkgnames}!"
+    else
+        error 1 "Unknown pkgtype '${pkgtype}'!"
     fi
 }
 for dep in ${deps}; do
@@ -127,9 +151,13 @@ for dep in ${deps}; do
 done
 # TODO: Avoid special casing on prefix.
 if [ "${prefix}" == "toolchain" ]; then
-    chrootpacman -S $(grep "${srctardir}/.SRCINFO" -e 'depends =' | \
-        sed -e 's:.*= ::') || \
-        error "$?" "Failed to install the local dependencies with pacman!"
+    # Find uninstalled dependencies, and install them.
+    for dep in $(grep "${srctardir}/.SRCINFO" -e 'depends =' | \
+        sed -e 's:.*= ::'); do
+        if ! pacman --root "${basedir}" -Q "${dep}" > /dev/null; then
+            chrootpacman -S "${dep}"
+        fi
+    done
 fi
 
 message info "Generating the config files..."
