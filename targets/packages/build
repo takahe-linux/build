@@ -18,42 +18,6 @@ exists "${path}/PKGBUILD" || exit "$?"
 configdir="$(realpath "${configdir}")" || \
     error 1 "Failed to get the realpath of the given config dir!"
 
-# We set up a clean chroot.
-# TODO: Actually use a clean chroot...
-# TODO: What would be a clean way to do this?
-#       We have some options - devtools, arch-install-scripts (pacstrap).
-#       Either way, not particularily great.
-# TODO: We should be able to configure this - where should it be stored?
-#       In /tmp? Should chroots be persistent?
-#       What are chroots, anyway?
-# ====================
-# A chroot is a directory structure with several packages unpackaged into it.
-# By using a clean chroot, a reproducible build environment can be created,
-# while avoiding pollution from other, unwanted packages.
-#
-# ====================
-# On the host system, a clean chroot will have the base and base-devel upstream
-# packages, preferably drawn from the local cache, and any additional
-# dependencies of the package being built, drawn either from the other built
-# packages, the local cache, or from online.
-#
-# For cross-compile chroots, a clean chroot will have the base upstream
-# packages, any additional upstream packages that are required, and the
-# appropriate toolchain packages.
-# Inside of that, it will have another sysroot, which will have any additional
-# dependencies of the package being built installed.
-#
-# ====================
-# The basic scheme will be to install base (and base-devel, as needed), then
-# to manually install any prebuilt dependencies, then to pull in the remaining
-# dependencies from upstream using 'makepkg -s'.
-#
-# Note that makepkg -s will *not* work on an Takahe Linux box, so I might have
-# to either fix that or install the packages manually.
-# The clean chroot dir should be specific to this particular config dir, but
-# I haven't implemented config files yet, so...
-# We should also keep clean chroot dirs seperate for different packages?
-
 # Create the clean chroot dir.
 # TODO: Fix this so that it is different for different configs.
 #       Also add locking...
@@ -73,7 +37,7 @@ mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 # Populate the chroot.
 chrootpacman() {
     fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
-        --root "${basedir}" --noconfirm "$@" || \
+        --root "${basedir}" "$@" || \
         error 1 "Failed to run pacman on chroot!"
 }
 # TODO: Implement properly.
@@ -82,7 +46,7 @@ chrootpacman() {
 #       This is also dependent on the local pacman.conf...
 message info "Populating the chroot..."
 mkdir -p "${basedir}/var/lib/pacman" && \
-    chrootpacman -Syu base-devel
+    chrootpacman --noconfirm -Syu base-devel
 
 # Find the source tarball.
 message info "Unpacking the source tarball..."
@@ -99,7 +63,7 @@ popd > /dev/null
 # TODO: Implement.
 #       We have to deal with host dependencies, target dependencies,
 #       and Arch (remote) dependencies.
-# TODO: Dependencies *should* be recursively evaluated.
+# TODO: Dependencies *should* be evaluated using a graph.
 # TODO: Make the distinction between build and install dependencies.
 message info "Resolving remaining dependencies..."
 deps="$(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${srctardir}/PKGBUILD" | \
@@ -116,7 +80,6 @@ installpkg() {
         toolchain/*) pkgtype="local";;
         *) error 1 "Unknown target '$1'";;
     esac
-    # TODO: Find the dependencies of the current target, and install them.
     local path="${configdir}/src/$1/PKGBUILD"
     for pkg in $(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
         sed -e 's:# Depends\:::' | \
@@ -129,18 +92,24 @@ installpkg() {
     # TODO: We do not recursively evaluate dependencies!
     local pkgnames="$(pkgdirpackages "${configdir}" "$1")" || \
         error "$?" "Failed to generate a list of pkgnames for '$1'!"
+    local names files pkg
+    for pkg in ${pkgnames}; do
+        names+="$(echo "${pkg}" | rev | cut -d- -f4- | rev) "
+        files+="${configdir}/pkgs/${pkg} "
+    done
     if [ "${pkgtype}" == "local" ]; then
-        chrootpacman -U "${configdir}/pkgs/${pkgnames}"
+        if ! pacman --root "${basedir}" -Q ${names}; then
+            yes 'y' | chrootpacman -U ${files}
+        fi
     elif [ "${pkgtype}" == "target" ]; then
         sysroot="${basedir}/opt/mips-linux-musl/sysroot"
         if [ ! -d "${sysroot}/var/lib/pacman" ]; then
             mkdir -p "${sysroot}/var/lib/pacman"
         fi
         # TODO: Don't use a hardcoded sysroot path...
-        # TODO: This relies on pkgnames only returning a single package name.
-        fakechroot fakeroot pacman -U --noconfirm --arch 'mips' \
-            --root "${basedir}/opt/mips-linux-musl/sysroot" \
-            "${configdir}/pkgs/${pkgnames}" || \
+        # TODO: Don't use a hardcoded arch...
+        fakechroot fakeroot pacman -U --needed --noconfirm --arch 'mips' \
+            --root "${basedir}/opt/mips-linux-musl/sysroot" ${files} || \
             error 1 "Failed to install packages to sysroot: ${pkgnames}!"
     else
         error 1 "Unknown pkgtype '${pkgtype}'!"
@@ -155,7 +124,7 @@ if [ "${prefix}" == "toolchain" ]; then
     for dep in $(grep "${srctardir}/.SRCINFO" -e 'depends =' | \
         sed -e 's:.*= ::'); do
         if ! pacman --root "${basedir}" -Q "${dep}" > /dev/null; then
-            chrootpacman -S "${dep}"
+            chrootpacman --noconfirm -S "${dep}"
         fi
     done
 fi
@@ -163,6 +132,8 @@ fi
 message info "Generating the config files..."
 # TODO: Some of these values should be custom?
 # TODO: Implement this...
+# TODO: We should extract some of these values from the local makepkg.conf,
+#       if one exists.
 # Add the makepkg config file.
 cat "${configdir}/src/config.sh" >> "${basedir}/etc/makepkg.conf" || \
     exit "$?"
@@ -175,34 +146,17 @@ fi
 cat > "${basedir}/etc/pacman.conf" << EOF
 EOF
 
-# Mount the various directories.
-# Note that this could be... fraught.
-# If we then rm -rf /dev, for example, things will go badly...
-message info "Mounting chroot directories..."
-sudo mount -t proc proc "${basedir}/proc"
-sudo mount --bind /dev "${basedir}/dev"
-cleanup() {
-    # Cleanup function.
-    failed=""
-    for fs in dev proc; do
-        if [ -d "${basedir}/${fs}" ]; then
-            sudo umount "${basedir}/${fs}" || \
-                failed+="${fs} "
-        fi
-    done
-    if [ -n "${failed}" ]; then
-        error 1 "Failed to unmount a filesystem in the chroot (${failed})"
-    fi
-}
-trap cleanup EXIT
-
 # Create the build script.
+if [ "${prefix}" == "packages" ]; then
+    # TODO: Remove target-specific hack.
+    makepkgargs="-d --nocheck"
+fi
 cat > "${basedir}/build.sh" << EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
 cd "${srctardir##*/}"
-makepkg
+makepkg ${makepkgargs}
 EOF
 chmod +x "${basedir}/build.sh"
 
@@ -218,5 +172,5 @@ cp "${srctardir}"/*.pkg.tar.* "${configdir}/pkgs/"
 
 # Clean up the build dir.
 message info "Cleaning up..."
-cleanup
 rm -rf "${basedir}"
+exit 0
