@@ -23,7 +23,9 @@ pkgdirsrctar() {
 }
 
 pkgdirpackages() {
-    # Use makepkg to print the resulting filenames of the given packages.
+    # Print the resulting filenames of the given packages.
+    # I did try using makepkg --packagelist, but it was *painfully* slow...
+    # TODO: Figure out how to use makepkg --packagelist.
     local configdir="$1"
     local pkgdir="$2"
 
@@ -33,7 +35,7 @@ pkgdirpackages() {
         exit 2
     fi
     # Extract the pkgbase/version/rel/arch
-    local pkgbase="$(sed -n "${srcinfo}" -e '/^pkgbase = /p' | \
+    local pkgnames="$(sed -n "${srcinfo}" -e '/^pkgname = /p' | \
         sed -e 's:.*= ::')"
     local pkgver="$(sed -n "${srcinfo}" -e '/pkgver = /p' | sed -e 's:.*= ::')"
     local pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
@@ -47,14 +49,13 @@ pkgdirpackages() {
         . "${configdir}/src/${pkgdir}/../makepkg.conf"
     fi
 
-    # We just report one package.
-    # TODO: Report all packages, and better handle the various corner cases.
-    # I did try using makepkg --packagelist, but it was *painfully* slow...
     if [ "${arch}" != "any" ]; then
         local carch="${CARCH}"
     else
         local carch="any"
     fi
-    printf "%s-%s-%s-%s%s" "${pkgbase}" "${pkgver}" "${pkgrel}" "${carch}" \
-        "${PKGEXT}"
+    for pkgname in ${pkgnames}; do
+        printf "%s-%s-%s-%s%s\n" "${pkgname}" "${pkgver}" "${pkgrel}" \
+            "${carch}" "${PKGEXT}"
+    done
 }
