@@ -65,7 +65,7 @@ check_configdir() {
     if [ "${configdir}" == "" ]; then
         error 1 "Config dir not given!"
     fi
-    for dir in build logs src pkgs srctar; do
+    for dir in build src pkgs srctar; do
         if [ ! -d "${configdir}/${dir}" ]; then
             error 1 "'${configdir}/${dir}' does not exist!"
         fi
