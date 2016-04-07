@@ -53,6 +53,10 @@ Do we need any global configs?
 Do we need seperate directories for different architectured build machines?
 What gets extracted from external files?
 
+Local config contains a few vars: 
+
+- Target triplet, CFLAGS, LDFLAGS.
+
 ## ##
 
 TODO: Fill this out.
