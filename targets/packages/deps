@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 #
 # Extract the dependencies for the given target.
 #
@@ -11,6 +11,7 @@ source "$(dirname "$0")/../../libtarget.sh"
 # We depend on the source tarball and the srcinfo.
 printf "srctar/${target}\n"
 printf "srcinfo/${target}\n"
+printf "path/config\n"
 
 # We also depend on some other packages.
 # TODO: Figure out how to extract the dependency information from the

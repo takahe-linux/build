@@ -8,6 +8,7 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 source "$(dirname "$0")/../../libpackage.sh"
+read_config # Load the config.
 
 # At this stage, we can assume that all of the dependencies have been built.
 # We need to do quite a bit here...
@@ -19,9 +20,8 @@ configdir="$(realpath "${configdir}")" || \
     error 1 "Failed to get the realpath of the given config dir!"
 
 # Create the clean chroot dir.
-# TODO: Fix this so that it is different for different configs.
-#       Also add locking...
-cleanchroot="${TMPDIR:-/tmp}/builder/"
+# TODO: Add locking...
+cleanchroot="${TMPDIR:-/tmp}/builder-${config["id"]}/"
 if [ ! -e "${cleanchroot}" ]; then
     mkdir "${cleanchroot}"
 elif [ ! -d "${cleanchroot}" ]; then
@@ -102,14 +102,14 @@ installpkg() {
             yes 'y' | chrootpacman -U ${files}
         fi
     elif [ "${pkgtype}" == "target" ]; then
-        sysroot="${basedir}/opt/mips-linux-musl/sysroot"
+        sysroot="${basedir}/sysroot"
         if [ ! -d "${sysroot}/var/lib/pacman" ]; then
             mkdir -p "${sysroot}/var/lib/pacman"
         fi
-        # TODO: Don't use a hardcoded sysroot path...
         # TODO: Don't use a hardcoded arch...
-        fakechroot fakeroot pacman -U --needed --noconfirm --arch 'mips' \
-            --root "${basedir}/opt/mips-linux-musl/sysroot" ${files} || \
+        fakechroot fakeroot pacman -U --needed --noconfirm \
+            --arch "${config[arch]}" \
+            --root "${basedir}/sysroot" ${files} || \
             error 1 "Failed to install packages to sysroot: ${pkgnames}!"
     else
         error 1 "Unknown pkgtype '${pkgtype}'!"
@@ -137,11 +137,36 @@ message info "Generating the config files..."
 # Add the makepkg config file.
 cat "${configdir}/src/config.sh" >> "${basedir}/etc/makepkg.conf" || \
     exit "$?"
+# Add the values from the local config file.
+# TODO: Clean up/remove excess declared variables.
+# TODO: Remove duplication here.
+printf '
+_target_arch="%s"
+_target_triplet="%s"
+_target_cflags="%s"
+_target_ldflags="%s"
+_sysroot=/sysroot
+_toolroot="/opt/${_target_triplet}"\n' \
+    "${config[arch]}" "${config[triplet]}" "${config[cflags]}" \
+    "${config[ldflags]}" \
+    >> "${basedir}/etc/makepkg.conf"
 if [ -f "${configdir}/src/${prefix}/makepkg.conf" ]; then
     cat "${configdir}/src/${prefix}/makepkg.conf" >> \
         "${basedir}/etc/makepkg.conf" || \
         exit "$?"
 fi
+# Add the values from the local config file.
+# TODO: Clean up/remove excess declared variables.
+printf '
+_target_arch="%s"
+_target_triplet="%s"
+_target_cflags="%s"
+_target_ldflags="%s"
+_sysroot=/sysroot
+_toolroot="/opt/${_target_triplet}"\n' \
+    "${config[arch]}" "${config[triplet]}" "${config[cflags]}" \
+    "${config[ldflags]}" \
+    >> "${basedir}/etc/makepkg.conf"
 # Add the pacman config file.
 cat > "${basedir}/etc/pacman.conf" << EOF
 EOF

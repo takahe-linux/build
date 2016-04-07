@@ -55,5 +55,12 @@ read_config() {
                 error 1 "Failed to parse '${contents}' in '${configdir}/config'"
         fi
     done < <(sed "${configdir}/config" -e 's:^[ \t]*::')
+
+    # Sanitize the result.
+    for key in id arch triplet cflags ldflags; do
+        if [ -z "${config["${key}"]}" ]; then
+            error 2 "'${key}' is not defined in '${configdir}/config'!"
+        fi
+    done
 }
 
