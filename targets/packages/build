@@ -102,7 +102,6 @@ installpkg() {
         if [ ! -d "${sysroot}/var/lib/pacman" ]; then
             mkdir -p "${sysroot}/var/lib/pacman"
         fi
-        # TODO: Don't use a hardcoded arch...
         fakechroot fakeroot pacman -U --needed --noconfirm \
             --arch "${config[arch]}" \
             --root "${basedir}/sysroot" ${files} || \
