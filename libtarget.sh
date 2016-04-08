@@ -1,7 +1,7 @@
 # Shared code for the target modules.
 # Import this at the start of the target code.
 
-configdir="$1"
+configdir="$(realpath "$1")"
 target="$2"
 shift 2
 
