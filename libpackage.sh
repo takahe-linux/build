@@ -42,7 +42,7 @@ pkgdirpackages() {
     local arch="$(sed -n "${srcinfo}" -e '/arch = /p' | sed -e 's:.*= ::')"
 
     # Source the makepkg.conf.
-    # We need this for both PKGEXT and the expected architecture.
+    # We need this for the expected architecture.
     . /etc/makepkg.conf
     . "${configdir}/src/config.sh"
     if [ -f "${configdir}/src/${pkgdir}/../makepkg.conf" ]; then
