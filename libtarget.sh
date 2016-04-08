@@ -50,7 +50,7 @@ read_config() {
             if printf "${key}" | tr '\t' ' ' | grep -e '\ ' > /dev/null; then
                 error 1 "'${key}' in '${contents}' from '${configdir}/config' contains whitespace!"
             fi
-            config["${key}"]="$(cut -d'=' -f2 < <(printf "${contents}") | \
+            config["${key}"]="$(cut -d'=' -f2- < <(printf "${contents}") | \
                 sed -e 's:^[ \t]*::' -e 's:[ \t]*$::')" || \
                 error 1 "Failed to parse '${contents}' in '${configdir}/config'"
         fi
