@@ -145,7 +145,6 @@ generate_graph() {
 
         # Process the dependencies.
         deps="$(run_action deps "${configdir}" "${target}")" || exit "$?"
-        # TODO: Figure out how to find out whether the call to get deps succeded
         # Add the item to the graph.
         graph["${target}"]="${deps}"
         # Add it to the to_visit list if it is not in the to_visit list or in
