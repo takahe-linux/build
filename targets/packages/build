@@ -36,13 +36,13 @@ chrootpacman() {
         --root "${basedir}" "$@" || \
         error 1 "Failed to run pacman on chroot!"
 }
-# TODO: Implement properly.
-# TODO: This takes quite a while, and will redownload packages...
-#       How to fix? Tar up a chroot somewhere? Keep a local cache?
-#       This is also dependent on the local pacman.conf...
+
+# TODO: This takes a while, and is dependent on the local pacman.conf.
+#       What would be a better method?
 message info "Populating the chroot..."
 mkdir -p "${basedir}/var/lib/pacman" && \
-    chrootpacman --noconfirm -Syu base-devel
+    fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
+    chrootpacman --noconfirm -S base-devel
 
 # Find the source tarball.
 message info "Unpacking the source tarball..."

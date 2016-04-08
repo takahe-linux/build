@@ -35,7 +35,6 @@ Things that the new system does not fix (yet):
 Things that have regressed:
 
 - System image creation.
-- Packages databases are redownloaded each time a package is built.
 
 ## Notes ##
 
