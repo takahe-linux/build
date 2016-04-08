@@ -24,14 +24,12 @@ Unfortunately, that script had a few... issues:
 Things that the new system does not fix (yet):
 
 - Massive number of TODO's.
-- Some hardcoded variables.
-- Asynchronous and networked builds.
 - Native cross-compile support in makepkg (via libmakepkg).
-- "Target system" support.
+- No support for 'native' builds.
+- Asynchronous and networked builds.
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds).
 - No support for test scripts.
-- No support for 'native' builds.
 - Trivial (comments, whitespace, etc) fixes still cause rebuilds.
 
 Things that have regressed:
@@ -50,13 +48,16 @@ In each config directory, we store:
 - Config file.
 
 Do we need any global configs?
-Do we need seperate directories for different architectured build machines?
+Do we need separate directories for different architectured build machines?
 What gets extracted from external files?
 
-Local config contains a few vars: 
+The config file is assumed to contain a few variables:
 
-- Target triplet, CFLAGS, LDFLAGS.
-
+- 'triplet':    Target triplet
+- 'id':         Config id
+- 'arch':       Target arch
+- 'cflags':     Target cflags
+- 'ldflags':    Target ldflags
 ## ##
 
 TODO: Fill this out.
