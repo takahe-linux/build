@@ -15,10 +15,6 @@ read_config # Load the config.
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
-# Set configdir to the realpath version.
-configdir="$(realpath "${configdir}")" || \
-    error 1 "Failed to get the realpath of the given config dir!"
-
 # Create the clean chroot dir.
 # TODO: Add locking...
 cleanchroot="${TMPDIR:-/tmp}/builder-${config["id"]}/"
@@ -130,31 +126,9 @@ if [ "${prefix}" == "toolchain" ]; then
 fi
 
 message info "Generating the config files..."
-# TODO: Some of these values should be custom?
-# TODO: Implement this...
 # TODO: We should extract some of these values from the local makepkg.conf,
-#       if one exists.
-# Add the values from the local config file.
-# TODO: Clean up/remove excess declared variables.
-# TODO: Remove duplication here.
-printf '
-_target_arch="%s"
-_target_arch_alias="${_target_arch}" # TODO: partial name (i586->i386)
-_target_triplet="%s"
-_local_triplet="${CHOST}"
-_target_cflags="%s"
-_target_ldflags="%s"
-_sysroot=/sysroot
-_toolroot="/opt/${_target_triplet}"\n' \
-    "${config[arch]}" "${config[triplet]}" "${config[cflags]}" \
-    "${config[ldflags]}" \
-    >> "${basedir}/etc/makepkg.conf"
-# Add the values from the specific config file.
-if [ -f "${configdir}/src/${prefix}/makepkg.conf" ]; then
-    cat "${configdir}/src/${prefix}/makepkg.conf" >> \
-        "${basedir}/etc/makepkg.conf" || \
-        exit "$?"
-fi
+#       if one exists (eg packager).
+genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
 # Add the pacman config file.
 cat > "${basedir}/etc/pacman.conf" << EOF
 EOF

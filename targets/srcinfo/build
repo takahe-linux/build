@@ -8,15 +8,12 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 source "$(dirname "$0")/../../libpackage.sh"
+read_config
 
-configdir="$(realpath "${configdir}")"
 path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
 # TODO: We use -A here; this is a bug in makepkg...
 pushd "${path}" || exit 1
-makepkg -A --printsrcinfo --config /dev/stdin > "${path}/.SRCINFO" << EOF
-    source "/etc/makepkg.conf"
-    source "${configdir}/src/config.sh"
-    source '${configdir}/src/${name%%/*}/makepkg.conf'
-EOF
+makepkg -A --printsrcinfo --config <(cat /etc/makepkg.conf
+    genmakepkgconf "${configdir}" "${name}") > "${path}/.SRCINFO"
 exit "$?"

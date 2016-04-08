@@ -1,4 +1,5 @@
 #!/usr/bin/bash
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
-echo "path/src/${name}/PKGBUILD"
+printf "path/config\n"
+printf "path/src/${name}/PKGBUILD\n"

@@ -8,16 +8,18 @@
 source "$(dirname "$0")/../../libmain.sh"
 source "$(dirname "$0")/../../libtarget.sh"
 source "$(dirname "$0")/../../libpackage.sh"
+read_config
 
-configdir="$(realpath "${configdir}")"
 path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
 pushd "${path}" || exit 1
-makepkg -f -m --allsource --config /dev/stdin << EOF
-    source "/etc/makepkg.conf"
-    source "${configdir}/src/config.sh"
-    source "${configdir}/src/${name%%/*}/makepkg.conf"
-    SRCPKGDEST="${configdir}/srctar"
-    SRCEXT='${SRCEXT}'
-EOF
+# Create the config file.
+conf="$(mktemp "${TMPDIR:-/tmp}/makepkg-conf.XXXXXXXX")" || \
+    error 1 "Failed to create a temporary file for '${target}'!"
+trap "rm -f '${conf}'" EXIT
+cat /etc/makepkg.conf >> "${conf}"
+genmakepkgconf "${configdir}" "${name}" >> "${conf}"
+printf 'SRCPKGDEST="%s/srctar"\n' "${configdir}" >> "${conf}"
+# Make the source tarball.
+makepkg -f --allsource --config "${conf}"
 exit "$?"

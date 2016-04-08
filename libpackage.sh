@@ -41,13 +41,11 @@ pkgdirpackages() {
     local pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     local arch="$(sed -n "${srcinfo}" -e '/arch = /p' | sed -e 's:.*= ::')"
 
-    # Source the makepkg.conf.
-    # We need this for the expected architecture.
+    # Source the makepkg.conf to find the expected architecture.
     . /etc/makepkg.conf
-    . "${configdir}/src/config.sh"
-    if [ -f "${configdir}/src/${pkgdir}/../makepkg.conf" ]; then
-        . "${configdir}/src/${pkgdir}/../makepkg.conf"
-    fi
+    # Set some other expected variables from the config.
+    . <(genmakepkgconf "${configdir}" "${pkgdir}") || \
+        error 1 "Failed to generate a temporary config file!"
 
     if [ "${arch}" != "any" ]; then
         local carch="${CARCH}"
@@ -58,4 +56,38 @@ pkgdirpackages() {
         printf "%s-%s-%s-%s%s\n" "${pkgname}" "${pkgver}" "${pkgrel}" \
             "${carch}" "${PKGEXT}"
     done
+}
+
+genmakepkgconf() {
+    # Write a temporary config script to stdout.
+    local configdir="$1"
+    local pkgdir="$2"
+
+    # Print a 'config.sh' equivalent.
+    # We also standardise PKGEXT and SRCEXT.
+    printf '
+# Standard config variables.
+_target_arch="%s"
+_target_arch_alias="${_target_arch}" # TODO: partial name (i586->i386)
+_target_triplet="%s"
+_local_triplet="${CHOST}"
+_target_cflags="%s"
+_target_ldflags="%s"
+
+# Sysroot is hardcoded to /sysroot.
+_sysroot=/sysroot
+_toolroot="/opt/${_target_triplet}"
+
+# We standardise PKGEXT.
+PKGEXT="%s"
+SRCEXT="%s"
+' \
+        "${config[arch]}" "${config[triplet]}" "${config[cflags]}" \
+        "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"
+
+    # If a package config file exists, add it...
+    local local_config="${configdir}/src/${pkgdir%%/*}/makepkg.conf"
+    if [ -f "${local_config}" ]; then
+        cat "${local_config}"
+    fi
 }
