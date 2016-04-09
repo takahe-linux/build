@@ -39,6 +39,8 @@ Things that have regressed:
 - System image creation.
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling.
+- Some local configuration stuff does not get carried across, eg PACKAGER, and
+  "-jx".
 
 ## Notes ##
 

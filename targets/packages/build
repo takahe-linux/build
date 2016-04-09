@@ -129,7 +129,7 @@ fi
 
 message info "Generating the config files..."
 # TODO: We should extract some of these values from the local makepkg.conf,
-#       if one exists (eg packager).
+#       if one exists (eg packager, "-jx", ...).
 genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
 # Add the pacman config file.
 cat > "${basedir}/etc/pacman.conf" << EOF
