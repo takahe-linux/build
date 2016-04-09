@@ -57,7 +57,7 @@ read_config() {
     done < <(sed "${configdir}/config" -e 's:^[ \t]*::')
 
     # Sanitize the result.
-    for key in id arch triplet cflags ldflags; do
+    for key in id arch arch_alias triplet cflags ldflags; do
         if [ -z "${config["${key}"]}" ]; then
             error 2 "'${key}' is not defined in '${configdir}/config'!"
         fi

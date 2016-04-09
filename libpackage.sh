@@ -68,7 +68,7 @@ genmakepkgconf() {
     printf '
 # Standard config variables.
 _target_arch="%s"
-_target_arch_alias="${_target_arch}" # TODO: partial name (i586->i386)
+_target_arch_alias="%s"
 _target_triplet="%s"
 _local_triplet="${CHOST}"
 _target_cflags="%s"
@@ -82,8 +82,8 @@ _toolroot="/opt/${_target_triplet}"
 PKGEXT="%s"
 SRCEXT="%s"
 ' \
-        "${config[arch]}" "${config[triplet]}" "${config[cflags]}" \
-        "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"
+        "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
+        "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"
 
     # If a package config file exists, add it...
     local local_config="${configdir}/src/${pkgdir%%/*}/makepkg.conf"
