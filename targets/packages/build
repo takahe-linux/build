@@ -17,6 +17,9 @@ exists "${path}/PKGBUILD" || exit "$?"
 
 # Create the clean chroot dir.
 # TODO: Add locking...
+# TODO: Whether or not to use TMPDIR should be determined by the amount of
+#       available space on TMPDIR, and the predicted RAM usage for the given
+#       package.
 cleanchroot="${TMPDIR:-/tmp}/builder-${config["id"]}/"
 if [ ! -e "${cleanchroot}" ]; then
     mkdir "${cleanchroot}"
