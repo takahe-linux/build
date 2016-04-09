@@ -4,6 +4,7 @@ takahe-build
 
 TODO: Add...
 
+
 ## Architecture ##
 
 Previously, I used a script to create a new system image.
@@ -24,17 +25,20 @@ Unfortunately, that script had a few... issues:
 Things that the new system does not fix (yet):
 
 - Massive number of TODO's.
-- Native cross-compile support in makepkg (via libmakepkg).
+- No cross-compile support in makepkg (via libmakepkg).
 - No support for 'native' builds.
+- No support for test scripts.
+- Trivial (comments, whitespace, etc) fixes still cause rebuilds.
 - Asynchronous and networked builds.
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds).
-- No support for test scripts.
-- Trivial (comments, whitespace, etc) fixes still cause rebuilds.
+- No build profiling (used disk space, etc). 
 
 Things that have regressed:
 
 - System image creation.
+- Requires *even more* RAM, due to the chroot location, which is not currently
+  configurable. Requires build profiling.
 
 ## Notes ##
 
@@ -57,6 +61,10 @@ The config file is assumed to contain a few variables:
 - 'arch':       Target arch
 - 'cflags':     Target cflags
 - 'ldflags':    Target ldflags
-## ##
+
+
+# Usage #
 
 TODO: Fill this out.
+
+
