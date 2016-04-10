@@ -5,8 +5,8 @@
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
 
-source "$(dirname "$0")/../../libmain.sh"
-source "$(dirname "$0")/../../libtarget.sh"
+source "$(dirname "$0")/../../lib/libmain.sh"
+source "$(dirname "$0")/../../lib/libtarget.sh"
 
 if [ "${name:0:1}" != "/" ]; then
     path="${configdir}/${name}"

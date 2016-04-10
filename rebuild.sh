@@ -8,8 +8,8 @@
 # Initial setup.
 VERSION="0.1"
 USAGE="<config dir> [<target>]..."
-source "$(dirname "$(realpath "$0")")/libmain.sh"
-source "$(dirname "$(realpath "$0")")/libbuild.sh"
+source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
+source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 
 # Create a new dict of targets, marking their current states.
 declare -A targets
