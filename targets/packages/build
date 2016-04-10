@@ -151,7 +151,10 @@ chmod +x "${basedir}/build.sh"
 
 # Build the package.
 message info "Building the package..."
-fakechroot chroot "${basedir}" /build.sh || \
+# TODO: We appear to need this 'special' path for fakechroot chroots, as
+#       fakechroot is not 100% reliable...
+PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
+    fakechroot chroot "${basedir}" /build.sh || \
     error "$?" "Running makepkg failed!"
 
 # Copy the built packages into the pkg dir.
