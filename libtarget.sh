@@ -34,7 +34,7 @@ randomise() {
     shuf < /dev/stdin
 }
 
-read_config() {
+load_config() {
     # Read the contents of the config file.
     local contents key
 
@@ -55,12 +55,5 @@ read_config() {
                 error 1 "Failed to parse '${contents}' in '${configdir}/config'"
         fi
     done < <(sed "${configdir}/config" -e 's:^[ \t]*::')
-
-    # Sanitize the result.
-    for key in id arch arch_alias triplet cflags ldflags; do
-        if [ -z "${config["${key}"]}" ]; then
-            error 2 "'${key}' is not defined in '${configdir}/config'!"
-        fi
-    done
 }
 
