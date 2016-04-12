@@ -25,7 +25,7 @@ populate_sysimage() {
     cleanup="sudo umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
     sudo mkdir -p "${point}/var/lib/pacman"
     sudo pacman --arch "${config[arch]}" --root "${point}" \
-        -U "${configdir}/pkgs"/*"${config[arch]}.pkg.tar".*
+        -U "${configdir}/pkgs"/*{"${config[arch]}",any}.pkg.tar.*
 }
 
 # Set the usage string.
