@@ -19,6 +19,9 @@ export VERBOSE="${VERBOSE:-1}"
 # Debug flag.
 export DEBUG="${DEBUG:-false}"
 
+# Config file contents.
+declare -A config
+
 error() {
     local status="$1"
     shift
@@ -70,9 +73,15 @@ check_configdir() {
             error 1 "'${configdir}/${dir}' does not exist!"
         fi
     done
-    if [ ! -e "${configfile}" ]; then
-        error 1 "'${configfile}' does not exist!"
-    fi
+
+    # Check the config file.
+    load_config "${configfile}"
+    # TODO: Do not require arch_alias, default to the value of 'arch' instead.
+    for key in id arch arch_alias triplet cflags ldflags; do
+        if [ -z "${config["${key}"]}" ]; then
+            error 2 "'${key}' is not defined in '${configfile}'!"
+        fi
+    done
 
 }
 
@@ -101,10 +110,29 @@ parseargs() {
     done
 }
 
-config() {
-    # Extract a given variable from the config file.
+load_config() {
+    # Read the contents of the config file.
+    local configfile="$1"
+    if [ ! -e "${configfile}" ]; then
+        error 1 "'${configfile}' does not exist!"
+    fi
+    local contents key
 
-    var="$2"
-    source "$1"
-    eval "printf '$2'"
+    while IFS= read contents; do
+        # Parse the line, ignoring comments.
+        if [ "${contents:0:1}" != "#" ] && [ "${#contents}" -gt 0 ]; then
+            # We assume that each line is of the form x = y, where x is the
+            # variable name and y is the contents.
+            # TODO: Add more sanity checking.
+            key="$(cut -d= -f1 < <(printf "${contents}") | \
+                sed -e 's:[ \t]*$::')" || \
+                error 1 "Failed to parse '${contents}' in '${configfile}'"
+            if printf "${key}" | tr '\t' ' ' | grep -e '\ ' > /dev/null; then
+                error 1 "'${key}' in '${contents}' from '${configfile}' contains whitespace!"
+            fi
+            config["${key}"]="$(cut -d'=' -f2- < <(printf "${contents}") | \
+                sed -e 's:^[ \t]*::' -e 's:[ \t]*$::')" || \
+                error 1 "Failed to parse '${contents}' in '${configfile}'"
+        fi
+    done < <(sed "${configfile}" -e 's:^[ \t]*::')
 }

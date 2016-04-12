@@ -3,7 +3,6 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
-read_config # Load the config.
 
 # We take the checksum of the PKGBUILD, which should change if anything else
 # does.

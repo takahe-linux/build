@@ -8,7 +8,6 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
-read_config # Load the config.
 
 # At this stage, we can assume that all of the dependencies have been built.
 # We need to do quite a bit here...

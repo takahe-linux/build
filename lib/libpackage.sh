@@ -91,16 +91,3 @@ SRCEXT="%s"
         cat "${local_config}"
     fi
 }
-
-read_config() {
-    # Read and sanitize the config.
-    load_config
-    
-    # Sanitize the result.
-    # TODO: Do not require arch_alias, default to the value of 'arch' instead.
-    for key in id arch arch_alias triplet cflags ldflags; do
-        if [ -z "${config["${key}"]}" ]; then
-            error 2 "'${key}' is not defined in '${configdir}/config'!"
-        fi
-    done
-}

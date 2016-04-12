@@ -8,7 +8,6 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
-read_config
 
 path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
