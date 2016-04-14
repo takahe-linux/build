@@ -125,6 +125,15 @@ if [ "${prefix}" == "toolchain" ]; then
         fi
     done
 fi
+# TODO: Hack around hostdepends for now.
+hostdeps="$(sed -n -e 's:  *: :g' -e '/# HostDepends:/p' < "${srctardir}/PKGBUILD" | \
+    sed -e 's:# HostDepends\:::' | \
+    tr ' ' '\n')" || error "$?" "Failed to read the dependency list!"
+for dep in ${hostdeps}; do
+    if ! pacman --root "${basedir}" -Q "${dep}" > /dev/null; then
+        chrootpacman --noconfirm -S "${dep}"
+    fi
+done
 
 message info "Generating the config files..."
 # TODO: We should extract some of these values from the local makepkg.conf,
