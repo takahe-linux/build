@@ -17,6 +17,7 @@ populate_sysimage() {
     local configdir="$1"
     local sysimage="$2"
     
+    # Prepare the mountpoint.
     point="$(sudo mktemp -d "${TMPDIR:-/tmp}/mount.XXXX")" || \
         error 1 "Failed to make a temporary dir to mount '${sysimage}' on!"
     cleanup="sudo rm -rf '${point}'"; trap "${cleanup}" EXIT
@@ -24,8 +25,22 @@ populate_sysimage() {
         error 1 "Failed to mount the system image!"
     cleanup="sudo umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
     sudo mkdir -p "${point}/var/lib/pacman"
+    # Install the packages.
     sudo pacman --arch "${config[arch]}" --root "${point}" \
         -U "${configdir}/pkgs"/*{"${config[arch]}",any}.pkg.tar.*
+
+    # Add a basic fstab.
+    # TODO: If the fs is configurable, this will need adjusting.
+    sudo tee "${point}/etc/fstab" > /dev/null << EOF
+/dev/sda / ext2 rw,relatime,noatime,data=ordered 0 1
+devtmpfs devtmpfs /dev
+procfs procfs /proc
+sysfs sysfs /sys
+tmpfs tmpfs /tmp
+EOF
+    
+    # Add the hostname.
+    echo 'qemu' | sudo tee "${point}/etc/hostname" > /dev/null
 }
 
 # Set the usage string.
