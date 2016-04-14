@@ -1,9 +1,6 @@
 # README #
 
-takahe-build
-
-TODO: Add...
-
+takahe-build - building utilities for takahe-linux.
 
 ## Architecture ##
 
@@ -32,7 +29,8 @@ Things that the new system does not fix (yet):
 - Asynchronous and networked builds.
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds).
-- No build profiling (used disk space, etc). 
+- No build profiling (used disk space, etc).
+- No distinction between host and target dependencies.
 
 Things that have regressed:
 
@@ -41,31 +39,9 @@ Things that have regressed:
 - Some local configuration stuff does not get carried across, eg PACKAGER, and
   "-jx".
 
-## Notes ##
-
-In each config directory, we store:
-
-- Build information.
-- Source tarballs.
-- Built packages.
-- 'src' (targets, PKGBUILDs)
-- Config file.
-
-Do we need any global configs?
-Do we need separate directories for different architectured build machines?
-What gets extracted from external files?
-
-The config file is assumed to contain a few variables:
-
-- 'triplet':    Target triplet
-- 'id':         Config id
-- 'arch':       Target arch
-- 'cflags':     Target cflags
-- 'ldflags':    Target ldflags
-
 
 # Usage #
 
-TODO: Fill this out.
+See rebuild.sh, mksysimage.sh, and popsysimage.sh
 
 
