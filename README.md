@@ -1,8 +1,8 @@
 # README #
 
-takahe-build - building utilities for takahe-linux.
+takahe-build - helper scripts for takahe-linux.
 
-## Architecture ##
+# New build script #
 
 Previously, I used a script to create a new system image.
 Unfortunately, that script had a few... issues:
@@ -22,7 +22,7 @@ Unfortunately, that script had a few... issues:
 Things that the new system does not fix (yet):
 
 - Massive number of TODO's.
-- No cross-compile support in makepkg (via libmakepkg).
+- No cross-compile support in makepkg (via libmakepkg?).
 - No support for 'native' builds.
 - No support for test scripts.
 - Trivial (comments, whitespace, etc) fixes still cause rebuilds.
@@ -39,9 +39,7 @@ Things that have regressed:
 - Some local configuration stuff does not get carried across, eg PACKAGER, and
   "-jx".
 
-
 # Usage #
 
 See rebuild.sh, mksysimage.sh, and popsysimage.sh
-
 
