@@ -91,3 +91,62 @@ SRCEXT="%s"
         cat "${local_config}"
     fi
 }
+
+findpkgdir() {
+    # Given a package name and dir, find all packages in that dir that provide
+    # the given package name.
+    local target_name="$1"
+    local dir="$2"
+
+    local providers=""
+    for pkg in "${dir}"/*; do
+        if [ -d "${pkg}" ] && [ -f "${pkg}/.SRCINFO" ]; then
+            # Check the provides.
+            # We assume that the .SRCINFO is up to date.
+            if grep "${pkg}/.SRCINFO" -e "pkgname = ${target_name}\$" -e \
+                "provides = ${target_name}\$" > /dev/null; then
+                providers+=" $(printf "%s" "${pkg}" | rev | cut -d'/' -f1-2 \
+                    | rev)"
+            fi
+        fi
+    done
+    for provider in ${providers:1}; do
+        printf "%s\n" "${provider}"
+    done
+}
+
+findpkgdeps() {
+    # Evaluate the deps piped in on stdin to dirs.
+    local configdir="$1"
+    local prefix="$2"
+    while IFS= read line; do
+        local deptype="$(printf "${line}" | cut -d= -f1 | sed -e 's:[ \t]::g')"
+        local dep="$(printf "${line}" | cut -d= -f2- | sed -e 's:[ \t]::g')"
+        if [ -z "${dep}" ]; then
+            continue
+        fi
+        if [ "${deptype}" == "hostdepends" ]; then
+            # Find the providers; we ignore missing deps, and assume that
+            # they will be installed from the host distro's repos.
+            depdir="toolchain"
+            skip_missing="true"
+        elif [ "${prefix}" == "toolchain" ] && \
+            [ "${deptype}" != "targetdepends" ]; then
+            # Find the providers; we ignore missing deps, and assume that
+            # they will be installed from the host distro's repos.
+            depdir="toolchain"
+            skip_missing="true"
+        else
+            # Find the providers; we assume that they will be cross-compiled.
+            depdir="packages"
+            skip_missing="false"
+        fi
+        local providers="$(findpkgdir "${dep}" "${configdir}/src/${depdir}")" \
+            || error 3 "Failed to get providers for '${dep}'!"
+        if [ "${skip_missing}" == "false" ] && [ -z "${providers}" ]; then
+            error 4 "Found no providers for '${dep}' of type '${deptype}'!"
+        elif [ -n "${providers}" ]; then
+            printf "%s\n" "${providers}"
+        fi
+    done < /dev/stdin
+}

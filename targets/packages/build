@@ -58,82 +58,124 @@ bsdtar -xf "${configdir}/srctar/${srctar}" || \
 popd > /dev/null
 
 # Dependency resolution.
-# TODO: Implement.
-#       We have to deal with host dependencies, target dependencies,
-#       and Arch (remote) dependencies.
 # TODO: Dependencies *should* be evaluated using a graph.
-# TODO: Make the distinction between build and install dependencies.
 message info "Resolving remaining dependencies..."
-deps="$(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${srctardir}/PKGBUILD" | \
-    sed -e 's:# Depends\:::' | \
-    tr ' ' '\n')" || error "$?" "Failed to read the dependency list!"
-installpkg() {
-    local pkgtype=""
-    case "$1" in
-        targets/*) for pkg in $(cat "${configdir}/src/$1"); do
-                installpkg "${pkg}" || \
-                    error "$?" "Failed to install pkg '${pkg}' with installpkg!"
-            done; return 0;;
-        packages/*) pkgtype="target";;
-        toolchain/*) pkgtype="local";;
-        *) error 1 "Unknown target '$1'";;
-    esac
-    local path="${configdir}/src/$1/PKGBUILD"
-    for pkg in $(sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
-        sed -e 's:# Depends\:::' | \
-        tr ' ' '\n'); do
-        message info "Installing the dependencies of $1..."
-        installpkg "${pkg}" || \
-            error "$?" "Failed to install '${pkg}', a dependency of '$1'!"
-    done
-    message info "Installing $1..."
-    # TODO: We do not recursively evaluate dependencies!
-    local pkgnames="$(pkgdirpackages "${configdir}" "$1")" || \
-        error "$?" "Failed to generate a list of pkgnames for '$1'!"
-    local names files pkg
-    for pkg in ${pkgnames}; do
-        names+="$(echo "${pkg}" | rev | cut -d- -f4- | rev) "
-        files+="${configdir}/pkgs/${pkg} "
-    done
-    if [ "${pkgtype}" == "local" ]; then
-        if ! pacman --root "${basedir}" -Q ${names}; then
-            yes 'y' | chrootpacman -U ${files}
-        fi
-    elif [ "${pkgtype}" == "target" ]; then
-        sysroot="${basedir}/sysroot"
-        if [ ! -d "${sysroot}/var/lib/pacman" ]; then
-            mkdir -p "${sysroot}/var/lib/pacman"
-        fi
-        fakechroot fakeroot pacman -U --needed --noconfirm \
-            --arch "${config[arch]}" \
-            --root "${basedir}/sysroot" ${files} || \
-            error 1 "Failed to install packages to sysroot: ${pkgnames}!"
+deps="$("$(dirname "$0")/../../scripts/lsdeps.sh" \
+    <(genmakepkgconf "${configdir}" "${target}") "${path}/PKGBUILD")" || \
+    error 1 "Failed to extract the deps from the PKGBUILD!"
+hostinstall() {
+    # Install the given package to the host chroot.
+    local pkg="$1"
+
+    if pacman -Q --root "${basedir}" "${pkg}" > /dev/null 2>&1; then
+        # Package is already installed; bail.
+        return
+    fi
+
+    message info "Installing host package ${pkg}..."
+
+    local providers="$(findpkgdir "${pkg}" "${configdir}/src/toolchain")" || \
+        error 1 "Failed to generate providers for '${pkg}'!"
+    local provcount="$(printf "%s\n" "${providers}" | wc -l)"
+    if [ "${provcount}" -gt 1 ]; then
+        error 2 "Ambiguous package name: '${pkg}' (got '${providers}')"
+    elif [ "${provcount}" -eq 1 ] && [ -n "${providers}" ]; then
+        # Install the given package locally.
+        # TODO: This method is convoluted and installs too many packages...
+        # TODO: Reduce duplication here.
+        local pkgfiles
+        pkgfiles="$(pkgdirpackages "${configdir}" "${providers}")" || \
+            error 3 \
+            "Failed to find the packages for package dir '${providers}'!"
+        while IFS= read line; do
+            local pkgfile="${configdir}/pkgs/${line}"
+            # Install the dependencies of the package.
+            pkgdeps="$(bsdtar -O -xf "${pkgfile}" .PKGINFO | \
+                sed -n -e '/^depend = /p' | cut -d '=' -f2- | 
+                sed -e 's:[ \t]::g')" || \
+                error 4 \
+                    "Failed to generate a list of dependencies for '${pkgfile}'!"
+            printf "Deps: '${pkgdeps}' (pkgfile: ${pkgfile})\n"
+            while IFS= read dep; do
+                [ -n "${dep}" ] && hostinstall "${dep}"
+            done < <(printf "%s\n" "${pkgdeps}")
+
+            # Install the given package.
+            printf "Installing host package file '${pkgfile}'\n"
+            chrootpacman --noconfirm -U "${pkgfile}" || \
+                error 1 "Failed to install packages to sysroot: ${pkgfile}!"
+        done < <(printf "%s\n" "${pkgfiles}")
     else
-        error 1 "Unknown pkgtype '${pkgtype}'!"
+        # Install the given package which is not provided locally.
+        chrootpacman --noconfirm --needed -S "${pkg}"
     fi
 }
-for dep in ${deps}; do
-    installpkg "${dep}" || error "Installing the dependencies failed!"
-done
-# TODO: Avoid special casing on prefix.
-if [ "${prefix}" == "toolchain" ]; then
-    # Find uninstalled dependencies, and install them.
-    for dep in $(grep "${srctardir}/.SRCINFO" -e 'depends =' | \
-        sed -e 's:.*= ::'); do
-        if ! pacman --root "${basedir}" -Q "${dep}" > /dev/null; then
-            chrootpacman --noconfirm -S "${dep}"
-        fi
-    done
-fi
-# TODO: Hack around hostdepends for now.
-hostdeps="$(sed -n -e 's:  *: :g' -e '/# HostDepends:/p' < "${srctardir}/PKGBUILD" | \
-    sed -e 's:# HostDepends\:::' | \
-    tr ' ' '\n')" || error "$?" "Failed to read the dependency list!"
-for dep in ${hostdeps}; do
-    if ! pacman --root "${basedir}" -Q "${dep}" > /dev/null; then
-        chrootpacman --noconfirm -S "${dep}"
+crossinstall() {
+    # Install the given package to the sysroot.
+    local pkg="$1"
+
+    # Set up the sysroot.
+    local sysroot="${basedir}/sysroot"
+    if [ ! -d "${sysroot}/var/lib/pacman" ]; then
+        mkdir -p "${sysroot}/var/lib/pacman"
     fi
-done
+
+    # Bail if the package is already installed.
+    if pacman -Q --root "${sysroot}" "${pkg}" > /dev/null 2>&1; then
+        return
+    fi
+
+    message info "Installing cross package ${dep}..."
+
+    # Find the corresponding package file.
+    local providers="$(findpkgdir "${pkg}" "${configdir}/src/packages")" || \
+        error 1 "Failed to generate providers for '${pkg}'!"
+    local provcount="$(printf "%s\n" "${providers}" | wc -l)"
+    if [ "${provcount}" -ne 1 ]; then
+        error 2 "Ambiguous package name: '${pkg}' (got '${providers}')"
+    fi
+    local line pkgfiles pkgdeps dep
+    # TODO: This installs too many packages.
+    pkgfiles="$(pkgdirpackages "${configdir}" "${providers}")" || \
+        error 3 "Failed to find the packages for package dir '${providers}'!"
+
+    while IFS= read line; do
+        local pkgfile="${configdir}/pkgs/${line}"
+        # Install the dependencies of the package.
+        pkgdeps="$(bsdtar -O -xf "${pkgfile}" .PKGINFO | \
+            sed -n -e '/depend = /p' | cut -d '=' -f2- | \
+            sed -e 's:[ \t]::g')" || \
+            error 4 \
+                "Failed to generate a list of dependencies for '${pkgfile}'!"
+        while IFS= read dep; do
+            [ -n "${dep}" ] && crossinstall "${dep}"
+        done < <(printf "%s\n" "${pkgdeps}")
+
+        # Install the given package.
+        fakechroot fakeroot pacman -U --noconfirm --arch "${config[arch]}" \
+            --root "${sysroot}" "${pkgfile}" || \
+            error 1 "Failed to install packages to sysroot: ${pkgfile}!"
+    done < <(printf "%s\n" "${pkgfiles}")
+}
+# Generate the deps and evaluate them.
+while IFS= read line; do
+    deptype="$(printf "${line}" | cut -d= -f1 | sed -e 's:[ \t]::g')"
+    dep="$(printf "${line}" | cut -d= -f2- | sed -e 's:[ \t]::g')"
+    if [ -z "${dep}" ]; then
+        continue
+    fi
+    if [ "${deptype}" == "hostdepends" ]; then
+        # Install a package to the host chroot.
+        hostinstall "${dep}"
+    elif [ "${prefix}" == "toolchain" ] && \
+        [ "${deptype}" != "targetdepends" ]; then
+        # Install a package to the host chroot.
+        hostinstall "${dep}"
+    else
+        # Install a package to the sysroot.
+        crossinstall "${dep}"
+    fi
+done < <(printf "%s\n" "${deps}")
 
 message info "Generating the config files..."
 # TODO: We should extract some of these values from the local makepkg.conf,

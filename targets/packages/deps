@@ -6,6 +6,7 @@
 # Contact:  < hobbitalastair at yandex dot com >
 
 source "$(dirname "$0")/../../lib/libmain.sh"
+source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 
 # We depend on the source tarball and the srcinfo.
@@ -14,15 +15,12 @@ printf "srcinfo/${target}\n"
 printf "path/config\n"
 
 # We also depend on some other packages.
-# TODO: Figure out how to extract the dependency information from the
-#       .SRCINFO - including host/target dependencies, local vs native system
-#       packages, and other such things.
-#       Note that this may be problematic - does the build system recheck
-#       dependencies, or at least handle them changing as dependencies are
-#       rebuilt?
 path="${configdir}/src/${target}/PKGBUILD"
 exists "${path}" || exit "$?"
-sed -n -e 's:  *: :g' -e '/# Depends:/p' < "${path}" | \
-    sed -e 's:# Depends\:::' | \
-    tr ' ' '\n' | \
-    randomise
+# Extract the deps.
+deps="$("$(dirname "$0")/../../scripts/lsdeps.sh" \
+    <(genmakepkgconf "${configdir}" "${target}") "${path}")" || \
+    error 1 "Failed to extract the deps from the PKGBUILD!"
+# Turn the deps into actual paths.
+printf "%s\n" "${deps}" | findpkgdeps "${configdir}" "${prefix}"
+exit "$?"

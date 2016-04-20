@@ -18,6 +18,7 @@ Unfortunately, that script had a few... issues:
 - Didn't have native logging.
 - Required root.
 - Couldn't handle working with different git branches.
+- No distinction between host and target dependencies.
 
 Things that the new system does not fix (yet):
 
@@ -30,7 +31,6 @@ Things that the new system does not fix (yet):
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds).
 - No build profiling (used disk space, etc).
-- No distinction between host and target dependencies.
 
 Things that have regressed:
 
@@ -42,4 +42,9 @@ Things that have regressed:
 # Usage #
 
 See rebuild.sh, mksysimage.sh, and popsysimage.sh
+
+For rebuilds, first generate the srcinfo files:
+
+./rebuild.sh _configdir_ targets/srcinfo
+./rebuild.sh _configdir_
 
