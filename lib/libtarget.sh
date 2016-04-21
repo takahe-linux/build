@@ -26,11 +26,3 @@ sum_file() {
     fi
 }
 
-randomise() {
-    # Randomise the given inputs.
-
-    # TODO: Nondeterminism is useful for testing, but having a flag to turn
-    #       it off would be good.
-    shuf < /dev/stdin
-}
-
