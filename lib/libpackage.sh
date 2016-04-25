@@ -41,7 +41,7 @@ pkgdirpackages() {
     local pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     local arch="$(sed -n "${srcinfo}" -e '/arch = /p' | sed -e 's:.*= ::')"
 
-    # Source the makepkg.conf to find the expected architecture.
+    # Source the global makepkg.conf to find the expected architecture.
     . /etc/makepkg.conf
     # Set some other expected variables from the config.
     . <(genmakepkgconf "${configdir}" "${pkgdir}") || \
@@ -63,6 +63,12 @@ genmakepkgconf() {
     local configdir="$1"
     local pkgdir="$2"
 
+    # If there is a custom makepkg.conf, use that.
+    local localconf="${XDG_CONFIG_HOME:-${HOME}/.config}/pacman/makepkg.conf"
+    if [ -f "${localconf}" ]; then
+        cat "${localconf}"
+    fi
+
     # Print a 'config.sh' equivalent.
     # We also standardise PKGEXT and SRCEXT.
     printf '
@@ -81,6 +87,9 @@ _toolroot="/opt/${_target_triplet}"
 # We standardise PKGEXT.
 PKGEXT="%s"
 SRCEXT="%s"
+
+# We unset BUILDDIR.
+unset BUILDDIR
 ' \
         "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
         "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"

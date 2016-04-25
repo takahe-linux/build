@@ -31,13 +31,13 @@ Things that the new system does not fix (yet):
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds).
 - No build profiling (used disk space, etc).
+- We still use recursive dependency walks...
 
 Things that have regressed:
 
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling.
-- Some local configuration stuff does not get carried across, eg PACKAGER, and
-  "-jx".
+- The program is *extremely* slow.
 
 # Usage #
 
