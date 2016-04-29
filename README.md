@@ -40,6 +40,8 @@ Things that have regressed:
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling.
 - Messy symlinks are left everywhere...
+- I no longer have a test script (run\_test.sh) for starting a QEMU VM with the
+  current image.
 
 # Usage #
 
