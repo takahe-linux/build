@@ -32,12 +32,14 @@ Things that the new system does not fix (yet):
   builds).
 - No build profiling (used disk space, etc).
 - We still use recursive dependency walks...
+- A new "branch" for something still requires a complete rebuild, or "dirtying"
+  some shared branch.
 
 Things that have regressed:
 
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling.
-- The program is *extremely* slow.
+- Messy symlinks are left everywhere...
 
 # Usage #
 
