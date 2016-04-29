@@ -58,16 +58,31 @@ pkgdirpackages() {
     done
 }
 
+localmakepkgconf() {
+    # Write the current main makepkg.conf to stdout.
+
+    cat /etc/makepkg.conf
+
+    local localconf="${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf"
+    if [ -f "${localconf}" ]; then
+        cat "${localconf}"
+    fi
+
+    if [ -f "${HOME}/.makepkg.conf" ]; then
+        cat "${HOME}/.makepkg.conf"
+    fi
+}
+
 genmakepkgconf() {
     # Write a temporary config script to stdout.
     local configdir="$1"
     local pkgdir="$2"
 
-    # If there is a custom makepkg.conf, use that.
-    local localconf="${XDG_CONFIG_HOME:-${HOME}/.config}/pacman/makepkg.conf"
-    if [ -f "${localconf}" ]; then
-        cat "${localconf}"
-    fi
+    # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
+    # TODO: Use something else?
+    printf '# Local configs'
+    localmakepkgconf | /usr/bin/grep -e '^PACKAGER='
+    localmakepkgconf | /usr/bin/grep -e '^MAKEFLAGS="'
 
     # Print a 'config.sh' equivalent.
     # We also standardise PKGEXT and SRCEXT.
@@ -88,8 +103,8 @@ _toolroot="/opt/${_target_triplet}"
 PKGEXT="%s"
 SRCEXT="%s"
 
-# We unset BUILDDIR.
-unset BUILDDIR
+# Set BUILDDIR to something sane (for building src tarballs).
+BUILDDIR="/tmp/builder" # TODO: Use the same one as everything else.
 ' \
         "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
         "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"

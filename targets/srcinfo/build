@@ -13,6 +13,6 @@ path="${configdir}/src/${name}"
 exists "${path}/PKGBUILD"
 # TODO: We use -A here; this is a bug in makepkg...
 pushd "${path}" || exit 1
-makepkg -A --printsrcinfo --config <(cat /etc/makepkg.conf
+makepkg -A --printsrcinfo --config <(localmakepkgconf
     genmakepkgconf "${configdir}" "${name}") > "${path}/.SRCINFO"
 exit "$?"

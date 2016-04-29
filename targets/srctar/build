@@ -16,7 +16,7 @@ pushd "${path}" || exit 1
 conf="$(mktemp "${TMPDIR:-/tmp}/makepkg-conf.XXXXXXXX")" || \
     error 1 "Failed to create a temporary file for '${target}'!"
 trap "rm -f '${conf}'" EXIT
-cat /etc/makepkg.conf >> "${conf}"
+localmakepkgconf >> "${conf}"
 genmakepkgconf "${configdir}" "${name}" >> "${conf}"
 printf 'SRCPKGDEST="%s/srctar"\n' "${configdir}" >> "${conf}"
 # Make the source tarball.
