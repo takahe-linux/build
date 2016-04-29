@@ -22,26 +22,29 @@ Unfortunately, that script had a few... issues:
 
 Things that the new system does not fix (yet):
 
-- Massive number of TODO's.
-- No cross-compile support in makepkg (via libmakepkg?).
-- No support for 'native' builds.
-- No support for test scripts.
-- Trivial (comments, whitespace, etc) fixes still cause rebuilds.
-- Asynchronous and networked builds.
+- No signal handling. (v0.1.6)
+- Massive number of TODO's. (v0.1.6)
+- No support for 'native' builds. (v0.1.6)
+- No support for test scripts. (v0.1.6)
+- Trivial (comments, whitespace, etc) fixes still cause rebuilds. (v0.1.6)
+- We still use recursive dependency walks... (v0.1.6)
+- No build profiling (used disk space, etc). (v0.1.7)
+- No "check for updates" script support". (v0.1.7)
+- Asynchronous and networked builds. (v0.1.7)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
-  builds).
-- No build profiling (used disk space, etc).
-- We still use recursive dependency walks...
+  builds). (v0.1.7)
+- No build profiling (used disk space, etc). (v0.1.7)
+- No cross-compile support in makepkg (via libmakepkg?). (v0.3.0)
 - A new "branch" for something still requires a complete rebuild, or "dirtying"
-  some shared branch.
+  some shared branch. (v???)
 
 Things that have regressed:
 
-- Requires *even more* RAM, due to the chroot location, which is not currently
-  configurable. Requires build profiling.
-- Messy symlinks are left everywhere...
+- Messy symlinks are left everywhere... (v0.1.6)
 - I no longer have a test script (run\_test.sh) for starting a QEMU VM with the
-  current image.
+  current image. (v0.1.6)
+- Requires *even more* RAM, due to the chroot location, which is not currently
+  configurable. Requires build profiling. (v0.1.7)
 
 # Usage #
 
