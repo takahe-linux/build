@@ -45,6 +45,7 @@ update_state() {
 
 mark() {
     # Mark the given target as up-to-date.
+    local configdir target dir state
     configdir="$1"
     target="$2"
 
@@ -60,7 +61,12 @@ mark() {
     for dep in "${target}" ${graph["${target}"]}; do
 
         # Find the current state.
-        state="${states["${dep}"]}"
+        state="${states["${target}"]}"
+        if [ -z "${state}" ]; then
+            # Generate it if required.
+            update_state "${configdir}" "${target}"
+            state="${states["${target}"]}"
+        fi
         if [ "${state}" == "na" ] || [ "${state}" == "old" ]; then
             # Ignore 'na' and 'old'.
             continue
@@ -95,6 +101,11 @@ old() {
     for dep in "${target}" ${graph["${target}"]}; do
         # Find the current state.
         state="${states["${dep}"]}"
+        if [ -z "${state}" ]; then
+            # Generate it if required.
+            update_state "${configdir}" "${target}"
+            state="${states["${dep}"]}"
+        fi
         if [ "${state}" == "na" ]; then
             # Ignore 'na'.
             continue
@@ -155,16 +166,6 @@ generate_graph() {
                 to_visit+=("${dep}")
             fi
         done
-    done
-}
-
-generate_states() {
-    # Generate a map from targets to states.
-    local configdir="$1"
-
-    for target in ${!graph[@]}; do
-        # For the target, generate and save the current state.
-        update_state "${configdir}" "${target}"
     done
 }
 

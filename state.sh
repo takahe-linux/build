@@ -54,8 +54,6 @@ main() {
     local target_list="$(get_target_list "${configdir}" $@)"
     message debug "Generating the graph..."
     generate_graph "${configdir}" ${target_list}
-    message debug "Generating the list of states..."
-    generate_states "${configdir}"
     walk "${configdir}" "walk_func" ${target_list}
 }
 

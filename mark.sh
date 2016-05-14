@@ -35,7 +35,6 @@ if [ "${TARGET}" == "" ]; then
 fi
 
 generate_graph "${CONFIGDIR}" "${TARGET}"
-generate_states "${CONFIGDIR}"
 
 mark "${CONFIGDIR}" "${TARGET}" || \
     error $? "Invalid target '${TARGET}'"
