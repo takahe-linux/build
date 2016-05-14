@@ -116,23 +116,11 @@ load_config() {
     if [ ! -e "${configfile}" ]; then
         error 1 "'${configfile}' does not exist!"
     fi
-    local contents key
+    local key value
 
-    while IFS= read contents; do
-        # Parse the line, ignoring comments.
-        if [ "${contents:0:1}" != "#" ] && [ "${#contents}" -gt 0 ]; then
-            # We assume that each line is of the form x = y, where x is the
-            # variable name and y is the contents.
-            # TODO: Add more sanity checking.
-            key="$(cut -d= -f1 < <(printf "${contents}") | \
-                sed -e 's:[ \t]*$::')" || \
-                error 1 "Failed to parse '${contents}' in '${configfile}'"
-            if printf "${key}" | tr '\t' ' ' | grep -e '\ ' > /dev/null; then
-                error 1 "'${key}' in '${contents}' from '${configfile}' contains whitespace!"
-            fi
-            config["${key}"]="$(cut -d'=' -f2- < <(printf "${contents}") | \
-                sed -e 's:^[ \t]*::' -e 's:[ \t]*$::')" || \
-                error 1 "Failed to parse '${contents}' in '${configfile}'"
-        fi
-    done < <(sed "${configfile}" -e 's:^[ \t]*::')
+    # We assume that each line is of the form x = y, where x is the
+    # variable name and y is the contents.
+    while IFS="= $(printf '\t\n')" read key value; do
+        config["${key}"]="${value}"
+    done < <(sed "${configfile}" -n -e 's:^[ \t]*::' -e '/^[^#]/p')
 }
