@@ -21,11 +21,6 @@ rebuild() {
     shift
     local current_state="good"
 
-    # Check wether this is old.
-    if old "${configdir}" "$1"; then
-        current_state="old"
-    fi
-
     # Check the state of the dependencies.
     for dep in ${graph["$1"]}; do
         if [ -z "${targets["${dep}"]}" ]; then
@@ -36,6 +31,11 @@ rebuild() {
             fail|skip) current_state="skip"; break;;
         esac
     done
+
+    # If this is still marked as good check wether this is old.
+    if [ "${current_state}" == "good" ] && old "${configdir}" "$1"; then
+        current_state="old"
+    fi
 
     # Figure out the appropriate action.
     targets["$1"]="${current_state}"

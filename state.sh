@@ -34,7 +34,7 @@ walk_func() {
     done
 
     # Then check wether this is old.
-    if old "${configdir}" "$1"; then
+    if [ "${current_old}" != "true" ] && old "${configdir}" "$1"; then
         current_old=true
     fi
 
