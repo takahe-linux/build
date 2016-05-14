@@ -56,15 +56,15 @@ main() {
     generate_graph "${configdir}" ${target_list}
     message debug "Generating the list of states..."
     generate_states "${configdir}"
-    walk "${CONFIGDIR}" "walk_func" ${target_list}
+    walk "${configdir}" "walk_func" ${target_list}
 }
 
 # Parse the arguments.
 CONFIGDIR="" # Set the initial config dir.
 TARGETS="" # The set of targets to investigate.
-parseargs $@ # Initial argument parse.
+parseargs "$@" # Initial argument parse.
 # Manual argument parse.
-for arg in $@; do
+for arg in "$@"; do
     ignore_arg "${arg}" || \
     case "${arg}" in
         *) if [ "${CONFIGDIR}" == "" ]; then

@@ -14,9 +14,9 @@ source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 # Parse the arguments.
 CONFIGDIR="" # Set the initial config dir.
 TARGET="" # Set the target to mark.
-parseargs $@ # Initial argument parse.
+parseargs "$@" # Initial argument parse.
 # Manual argument parse.
-for arg in $@; do
+for arg in "$@"; do
     ignore_arg "${arg}" || \
     case "${arg}" in
         *) if [ "${CONFIGDIR}" == "" ]; then
