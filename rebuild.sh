@@ -91,7 +91,6 @@ main() {
     local configdir="$1"
     shift
     local target_list="$(get_target_list "${configdir}" $@)"
-    generate_graph "${configdir}" ${target_list}
     walk "${configdir}" "rebuild" ${target_list}
     summary
 }

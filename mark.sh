@@ -34,7 +34,5 @@ if [ "${TARGET}" == "" ]; then
     error 1 "No target given!"
 fi
 
-generate_graph "${CONFIGDIR}" "${TARGET}"
-
 mark "${CONFIGDIR}" "${TARGET}" || \
     error $? "Invalid target '${TARGET}'"

@@ -139,36 +139,6 @@ in_array() {
     return 1
 }
 
-generate_graph() {
-    # Generate the graph for the given configuration dir.
-    # Note that this is saved to the global variable graph, due to the limits
-    # of my bash knowledge. graph is a map from targets to dependencies.
-    configdir="$1"
-    shift
-
-    local to_visit=($@)     # Nodes to visit
-    local target deps
-
-    while [ "${#to_visit[@]}" -gt 0 ]; do
-        # Visit a target.
-        target="${to_visit[0]}"
-        to_visit=(${to_visit[@]:1})
-
-        # Process the dependencies.
-        deps="$(run_action deps "${configdir}" "${target}")" || exit "$?"
-        # Add the item to the graph.
-        graph["${target}"]="${deps}"
-        # Add it to the to_visit list if it is not in the to_visit list or in
-        # the graph.
-        for dep in ${deps}; do
-            if ! (in_array "${dep}" ${to_visit[@]} || \
-                [ -n "${graph["${dep}"]}" ]); then
-                to_visit+=("${dep}")
-            fi
-        done
-    done
-}
-
 walk() {
     # Walk each target in order, using the prebuilt graph.
     # The traversal is depth first, post order.
@@ -192,7 +162,14 @@ walk() {
         while [ "${#stack}" -gt 0 ]; do
             local current="${stack[-1]}"
 
-            # Find a unvisited dependencies.
+            # Generate and cache the dependency list, if required.
+            if [ -z "${graph["${current}"]+is_set}" ]; then
+                deps="$(run_action deps "${configdir}" "${current}")" || \
+                    exit "$?"
+                graph["${current}"]="${deps}"
+            fi
+
+            # Find an unvisited dependency.
             local unvisited=""
             for dep in ${graph["${current}"]}; do
                 if [ -z "${visited["${dep}"]}" ]; then

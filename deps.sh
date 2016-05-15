@@ -28,7 +28,6 @@ main() {
     local configdir="$1"
     shift
     local target_list="$(get_target_list "${configdir}" $@)"
-    generate_graph "${configdir}" ${target_list}
     # TODO: Use my own tree traversal code to fix it being up the wrong way,
     #       not repeating targets, and without much in the way of visual cues
     #       for how things join up.
