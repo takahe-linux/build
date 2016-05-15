@@ -104,10 +104,11 @@ PKGEXT="%s"
 SRCEXT="%s"
 
 # Set BUILDDIR to something sane (for building src tarballs).
-BUILDDIR="/tmp/builder" # TODO: Use the same one as everything else.
+BUILDDIR="/tmp/builder-%s"
 ' \
         "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
-        "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}"
+        "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}" \
+        "${config[id]}"
 
     # If a package config file exists, add it...
     local local_config="${configdir}/src/${pkgdir%%/*}/makepkg.conf"
