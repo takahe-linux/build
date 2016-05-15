@@ -57,15 +57,21 @@ mark() {
 
     printf '' > "${configdir}/build/${target}"
 
+    # Generate and cache the dependency list, if required.
+    if [ -z "${graph["${target}"]+is_set}" ]; then
+        graph["${target}"]="$(run_action deps "${configdir}" "${target}")" || \
+            exit "$?"
+    fi
+
     # Save the state for the target and all of the dependencies.
     for dep in "${target}" ${graph["${target}"]}; do
 
         # Find the current state.
-        state="${states["${target}"]}"
+        state="${states["${dep}"]}"
         if [ -z "${state}" ]; then
             # Generate it if required.
-            update_state "${configdir}" "${target}"
-            state="${states["${target}"]}"
+            update_state "${configdir}" "${dep}"
+            state="${states["${dep}"]}"
         fi
         if [ "${state}" == "na" ] || [ "${state}" == "old" ]; then
             # Ignore 'na' and 'old'.
