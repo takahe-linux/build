@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Print out the required targets for the dependency and state scripts.
+# We rely on the .SRCINFO file being created.
+
+printf "srcinfo/$2\n"
+printf "pkglist\n"      # The pkglist is required...

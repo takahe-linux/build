@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+configdir="$1"
+target="$2"
+
+for dir in "${configdir}/src/"*/*; do
+    if [ -d "${dir}" ] && [ -f "${dir}/PKGBUILD" ]; then
+        printf "srcinfo/%s\n" "$(echo "${dir}" | rev | cut -d '/' -f 1-2 | \
+            rev)"
+    fi
+done

@@ -4,6 +4,7 @@
 # Contact:  < hobbitalastair at yandex dot com >
 
 declare -A graph    # Targets and their dependencies
+declare -A requires # Targets and their requires
 declare -A states   # Targets and their current state
 declare -A targets  # Targets and current build state
 
@@ -157,9 +158,12 @@ walk() {
     declare -a stack
     # We also note visited nodes.
     declare -A visited
+    # We also keep track of "required" deps; they need to be built before
+    # any of the dep scripts are run which require them.
+    declare -A required
 
     # For each target, walk the graph.
-    for target in $@; do
+    for target in "$@"; do
         # We first check that we have not already visited the given target.
         if [ -n "${visited["${target}"]}" ]; then
             continue
@@ -168,22 +172,63 @@ walk() {
         # Walk the graph.
         while [ "${#stack}" -gt 0 ]; do
             local current="${stack[-1]}"
+            local unvisited=""
 
-            # Generate and cache the dependency list, if required.
-            if [ -z "${graph["${current}"]+is_set}" ]; then
-                deps="$(run_action deps "${configdir}" "${current}")" || \
+            # Generate and cache the requires.
+            if [ -z "${requires["${current}"]+is_set}" ]; then
+                deps="$(run_action require "${configdir}" "${current}")" || \
                     exit "$?"
-                graph["${current}"]="${deps}"
+                requires["${current}"]="${deps}"
             fi
 
-            # Find an unvisited dependency.
-            local unvisited=""
-            for dep in ${graph["${current}"]}; do
+            # Find an unvisited require.
+            local failed=""
+            for dep in ${requires["${current}"]}; do
+                # Mark the dep as a "required" dep.
+                required["${dep}"]="true"
+                # Check if the dep is visited.
                 if [ -z "${visited["${dep}"]}" ]; then
                     unvisited="${dep}"
                     break
+                else
+                    # Check that the dependencies all rebuilt properly.
+                    if [ "${targets["${dep}"]}" != "rebuilt" ] && \
+                        [ "${targets["${dep}"]}" != "good" ]; then
+                        failed="${dep} ${failed}"
+                    fi
                 fi
             done
+
+            # If there are no unvisited (and unbuilt!) requires, then find
+            # "normal" dependencies.
+            if [ -z "${failed}" ]; then
+                if [ -z "${unvisited}" ]; then
+                    # Generate and cache the dependency list, if required.
+                    if [ -z "${graph["${current}"]+is_set}" ]; then
+                        deps="$(run_action deps "${configdir}" "${current}")" \
+                            || exit "$?"
+                        graph["${current}"]="${deps}"
+                    fi
+
+                    # Find an unvisited dependency.
+                    for dep in ${graph["${current}"]}; do
+                        # If this is marked as required, then mark the deps as
+                        # required.
+                        if [ "${required["${current}"]}" == "true" ]; then
+                            required["${dep}"]="true"
+                        fi
+                        # Check if the dep is visited.
+                        if [ -z "${visited["${dep}"]}" ]; then
+                            unvisited="${dep}"
+                            break
+                        fi
+                    done
+                fi
+            else
+                # We have a failure; print a warning and ignore.
+                message warn \
+                    "Failed to generate the dependencies for ${current} ([${failed:0:-1}] failed)!"
+            fi
 
             if [ -n "${unvisited}" ]; then
                 # The current node has an unvisited dependency - add it to
@@ -203,67 +248,117 @@ walk() {
                 stack+=("${unvisited}")
             else
                 # The current node does not have an unvisited dependency.
-                # Pop it off the stack, mark it as visited, and run the
-                # function on it.
+                # Pop it off the stack.
                 stack=(${stack[@]:0:$(expr ${#stack[@]} - 1)})
+
+                # Update the state of the target.
+                update_target "${configdir}" "${current}"
+
+                # Call the function.
                 "${func}" "${configdir}" "${current}" "${stack[@]}"
+
+                # If it is "required", rebuild it.
+                if [ -n "${required["${current}"]}" ]; then
+                    rebuild "${configdir}" "${current}"
+                fi
+                
+                # Mark it as visited.
                 visited["${current}"]=true
             fi
         done
     done
 }
 
-rebuild() {
-    # Rebuild the given target, as needed.
+update_target() {
+    # Get the state of the given target, as needed.
     # We consider 5 states: rebuilt, old, fail, skip, and good.
-    configdir="$1"
+    local configdir="$1"
     shift
     local current_state="good"
 
-    # Check the state of the dependencies.
-    for dep in ${graph["$1"]}; do
+    # Check that all of the requires built.
+    for dep in ${requires["$1"]}; do
         if [ -z "${targets["${dep}"]}" ]; then
-            error 1 "Encountered '$1' before it's dependency '${dep}'!"
+            error 1 "Encountered '$1' before it's require '${dep}'!"
         fi
         case "${targets["${dep}"]}" in
-            old|rebuilt) current_state="old";;
-            fail|skip) current_state="skip"; break;;
+            # We need all the dependencies to be good or rebuilt.
+            old|fail|skip) current_state="skip"; break;;
         esac
     done
+
+    # Check the state of the dependencies, if all the requires built.
+    if [ "${current_state}" == "good" ]; then
+        for dep in ${graph["$1"]}; do
+            if [ -z "${targets["${dep}"]}" ]; then
+                error 1 "Encountered '$1' before it's dependency '${dep}'!"
+            fi
+            case "${targets["${dep}"]}" in
+                old|rebuilt) current_state="old";;
+                fail|skip) current_state="skip"; break;;
+            esac
+        done
+    fi
 
     # If this is still marked as good check wether this is old.
     if [ "${current_state}" == "good" ] && old "${configdir}" "$1"; then
         current_state="old"
     fi
 
-    # Figure out the appropriate action.
+    # Save the state.
+    message debug "State of '$1' is '${current_state}'"
     targets["$1"]="${current_state}"
-    case "${current_state}" in
-        old) message warn "$1 is out of date"
-            # Create a temporary document for the build log.
-            local buildlog="$(mktemp "${TMPDIR:-/tmp}/build-$(echo "$1" \
-                | tr '/' '_')".XXXXXXXX)"
-            run_action build "${configdir}" "$1" > "${buildlog}" 2>&1
-            if [ "$?" -ne 0 ]; then
-                message error "Last 10 lines of the build log (${buildlog}):"
-                tail -n 10 "${buildlog}" | sed 's:^:    :' > /dev/stderr
-                message error "Failed to build '$1'!"
-                targets["$1"]="fail"
-            else
-                update_state "${configdir}" "$1"
-                if [ "${states["$1"]}" == "old" ]; then
-                    message error "Built target '$1' is still 'old'!"
-                    targets["$1"]="fail"
-                else
-                    rm -f "${buildlog}"
-                    mark "${configdir}" "$1" || \
-                        error "$?" "Invalid target '$1'!"
-                    targets["$1"]="rebuilt"
-                fi
-            fi;;
+}
+
+print_state() {
+    # Print the current state of the given target.
+    local configdir="$1"
+    shift
+    case "${targets["$1"]}" in
+        old) message warn "$1 is out of date";;
         skip) message warn "Skipping $1";;
-        *) message info "$1 is up to date";;
+        good) message info "$1 is up to date";;
+        *) message error "Unknown state for $1 '${targets["$1"]}'";;
     esac
+}
+
+rebuild() {
+    # Rebuild the given target, if needed.
+    local configdir="$1"
+    shift
+
+    current_state="${targets["$1"]}"
+    if [ -z "${current_state}" ]; then
+        # We have not found the state of the target.
+        error 1 "Cannot rebuild '${1}' before it's state is found!"
+    fi
+    if [ "${current_state}" != "old" ]; then
+        # Abort; this does not need rebuilding.
+        return
+    fi
+
+    # Rebuild; this is old.
+    # Create a temporary document for the build log.
+    local buildlog="$(mktemp "${TMPDIR:-/tmp}/build-$(echo "$1" \
+        | tr '/' '_')".XXXXXXXX)"
+    run_action build "${configdir}" "$1" > "${buildlog}" 2>&1
+    if [ "$?" -ne 0 ]; then
+        message error "Last 10 lines of the build log (${buildlog}):"
+        tail -n 10 "${buildlog}" | sed 's:^:    :' > /dev/stderr
+        message error "Failed to build '$1'!"
+        targets["$1"]="fail"
+    else
+        update_state "${configdir}" "$1"
+        if [ "${states["$1"]}" == "old" ]; then
+            message error "Built target '$1' is still 'old'!"
+            targets["$1"]="fail"
+        else
+            rm -f "${buildlog}"
+            mark "${configdir}" "$1" || \
+                error "$?" "Invalid target '$1'!"
+            targets["$1"]="rebuilt"
+        fi
+    fi
 }
 
 get_target_list() {

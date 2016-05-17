@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+source "$(dirname "$0")/../../lib/libmain.sh"
+source "$(dirname "$0")/../../lib/libtarget.sh"
+
+# Generate the srcinfo cache.
+# TODO: Implement.

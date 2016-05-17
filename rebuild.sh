@@ -11,6 +11,12 @@ USAGE="<config dir> [<target>]..."
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 
+rebuild_target() {
+    # Print the state and rebuild the target.
+    print_state "$@"
+    rebuild "$@"
+}
+
 summary() {
     # Print a summary.
 
@@ -35,7 +41,7 @@ main() {
     local configdir="$1"
     shift
     local target_list="$(get_target_list "${configdir}" $@)"
-    walk "${configdir}" "rebuild" ${target_list}
+    walk "${configdir}" "rebuild_target" ${target_list}
     summary
 }
 
