@@ -40,7 +40,7 @@ main() {
     # Print the current status.
     local configdir="$1"
     shift
-    local target_list="$(get_target_list "${configdir}" $@)"
+    local target_list="$(get_target_list "${configdir}" "$@")"
     walk "${configdir}" "rebuild_target" ${target_list}
     summary
 }

@@ -384,11 +384,11 @@ get_target_list() {
 
     if [ "$#" -eq 0 ]; then
         local target_list=()
-        for targ in "${CONFIGDIR}"/src/targets/*; do
+        for targ in "${configdir}"/src/targets/*; do
             target_list+=("$(echo "${targ}" | grep -o -e '[^/]*/[^/]*$')")
         done
     else
-        local target_list=$@
+        local target_list="$@"
     fi
-    printf "${target_list}"
+    printf "%s\n" "${target_list[@]}"
 }

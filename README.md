@@ -50,8 +50,5 @@ Things that have regressed:
 
 See rebuild.sh, mksysimage.sh, and popsysimage.sh
 
-For rebuilds, first generate the srcinfo files:
-
-./rebuild.sh _configdir_ targets/srcinfo
 ./rebuild.sh _configdir_
 

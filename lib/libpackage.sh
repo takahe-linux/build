@@ -81,8 +81,7 @@ genmakepkgconf() {
     # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
     # TODO: Use something else?
     printf '# Local configs'
-    localmakepkgconf | /usr/bin/grep -e '^PACKAGER='
-    localmakepkgconf | /usr/bin/grep -e '^MAKEFLAGS="'
+    localmakepkgconf | /usr/bin/grep -e '^PACKAGER=' -e '^MAKEFLAGS="'
 
     # Print a 'config.sh' equivalent.
     # We also standardise PKGEXT and SRCEXT.
@@ -146,28 +145,43 @@ findpkgdeps() {
         if [ -z "${dep}" ]; then
             continue
         fi
+        local depdir skip_missing
         if [ "${deptype}" == "hostdepends" ]; then
             # Find the providers; we ignore missing deps, and assume that
             # they will be installed from the host distro's repos.
-            depdir="toolchain"
+            depdirs="toolchain"
             skip_missing="true"
         elif [ "${prefix}" == "toolchain" ] && \
             [ "${deptype}" != "targetdepends" ]; then
             # Find the providers; we ignore missing deps, and assume that
             # they will be installed from the host distro's repos.
-            depdir="toolchain"
+            depdirs="toolchain"
             skip_missing="true"
-        else
+        elif [ "${prefix}" == "packages" ]; then
             # Find the providers; we assume that they will be cross-compiled.
-            depdir="packages"
+            depdirs="packages"
+            skip_missing="false"
+        else
+            # Find the providers; we assume that they will be cross-compiled
+            # or built natively.
+            depdirs="native packages"
             skip_missing="false"
         fi
-        local providers="$(findpkgdir "${configdir}" "${dep}" "${depdir}")" \
-            || error 3 "Failed to get providers for '${dep}'!"
+        for depdir in $depdirs; do
+            local providers="$(findpkgdir "${configdir}" "${dep}" \
+                "${depdir}")" \
+                || error 3 "Failed to get providers for '${dep}'!"
+            if [ -n "${providers}" ]; then
+                # Break early if we have found at least one provider.
+                break
+            fi
+        done
+        # Check that we did find a provider.
         if [ "${skip_missing}" == "false" ] && [ -z "${providers}" ]; then
             error 4 "Found no providers for '${dep}' of type '${deptype}'!"
         elif [ -n "${providers}" ]; then
             printf "%s\n" "${providers}"
+            return
         fi
     done < /dev/stdin
 }
