@@ -3,5 +3,22 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 
-# Generate the srcinfo cache.
+# Generate the package list cache.
 # TODO: Implement.
+
+declare -A providers
+
+for pkg in "${configdir}/src"/*/*; do
+    dir="$(printf "%s" "${pkg}" | rev | cut -d'/' -f1-2 | rev)"
+    if [ -d "${pkg}" ] && [ -f "${pkg}/.SRCINFO" ]; then
+        while IFS="= $(printf '\t\n')" read key value; do
+            if [ "${key}" == 'pkgname' ] || [ "${key}" == 'provides' ]; then
+                providers["${value}"]="${dir}"
+            fi
+        done < "${pkg}/.SRCINFO"
+    fi
+done
+
+for pkg in "${!providers[@]}"; do
+    printf "${pkg}: ${providers["${pkg}"]}\n"
+done > "${configdir}/pkglist"

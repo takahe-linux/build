@@ -1,3 +1,7 @@
 #!/usr/bin/env sh
 
-printf "na"
+if [ -e "$1/pkglist" ]; then
+    md5sum "$1/pkglist"
+else
+    printf 'old'
+fi

@@ -120,24 +120,20 @@ BUILDDIR="/tmp/builder-%s"
 findpkgdir() {
     # Given a package name and dir, find all packages in that dir that provide
     # the given package name.
-    local target_name="$1"
-    local dir="$2"
+    local configdir="$1"
+    local target_name="$2"
+    local dir="$3"
 
-    local providers=""
-    for pkg in "${dir}"/*; do
-        if [ -d "${pkg}" ] && [ -f "${pkg}/.SRCINFO" ]; then
-            # Check the provides.
-            # We assume that the .SRCINFO is up to date.
-            if grep "${pkg}/.SRCINFO" -e "pkgname = ${target_name}\$" -e \
-                "provides = ${target_name}\$" > /dev/null; then
-                providers+=" $(printf "%s" "${pkg}" | rev | cut -d'/' -f1-2 \
-                    | rev)"
-            fi
+    local pkg providers provdir provider
+    while IFS=":" read pkg providers; do
+        if [ "${pkg}" == "${target_name}" ]; then
+            while IFS="\/ " read provdir provider; do
+                if [ "${provdir}" == "${dir}" ]; then
+                    printf "%s/%s\n" "${provdir}" "${provider}";
+                fi
+            done < <(printf "${providers}\n")
         fi
-    done
-    for provider in ${providers:1}; do
-        printf "%s\n" "${provider}"
-    done
+    done < "${configdir}/pkglist"
 }
 
 findpkgdeps() {
@@ -166,7 +162,7 @@ findpkgdeps() {
             depdir="packages"
             skip_missing="false"
         fi
-        local providers="$(findpkgdir "${dep}" "${configdir}/src/${depdir}")" \
+        local providers="$(findpkgdir "${configdir}" "${dep}" "${depdir}")" \
             || error 3 "Failed to get providers for '${dep}'!"
         if [ "${skip_missing}" == "false" ] && [ -z "${providers}" ]; then
             error 4 "Found no providers for '${dep}' of type '${deptype}'!"

@@ -74,7 +74,7 @@ hostinstall() {
 
     message info "Installing host package ${pkg}..."
 
-    local providers="$(findpkgdir "${pkg}" "${configdir}/src/toolchain")" || \
+    local providers="$(findpkgdir "${configdir}" "${pkg}" "toolchain")" || \
         error 1 "Failed to generate providers for '${pkg}'!"
     local provcount="$(printf "%s\n" "${providers}" | wc -l)"
     if [ "${provcount}" -gt 1 ]; then
@@ -128,7 +128,7 @@ crossinstall() {
     message info "Installing cross package ${dep}..."
 
     # Find the corresponding package file.
-    local providers="$(findpkgdir "${pkg}" "${configdir}/src/packages")" || \
+    local providers="$(findpkgdir "${configdir}" "${pkg}" "packages")" || \
         error 1 "Failed to generate providers for '${pkg}'!"
     local provcount="$(printf "%s\n" "${providers}" | wc -l)"
     if [ "${provcount}" -ne 1 ]; then
