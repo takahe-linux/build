@@ -22,9 +22,8 @@ run_action() {
     if [ -d "${path}" ]; then
         if [ -e "${path}/${action}" ]; then
             # Run the script to find the current state.
+            # If the file doesn't exist, ignore.
             "${path}/${action}" "${configdir}" "${target}" || return $?
-        else
-            error 1 "Target '${target}' does not support action ${action}!"
         fi
     else
         error 1 "Unknown target type '${target%%/*}'!"
