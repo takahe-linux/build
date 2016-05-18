@@ -44,6 +44,22 @@ update_state() {
     states["${target}"]="${state}"
 }
 
+get_state() {
+    # Get the state for the given target, generating it if required.
+    local configdir target state
+    configdir="$1"
+    target="$2"
+
+    # Get the state.
+    state="${states["${target}"]}"
+    if [ -z "${state}" ]; then
+        # Generate it if required.
+        update_state "${configdir}" "${target}"
+        state="${states["${target}"]}"
+    fi
+    printf "%s" "${state}"
+}
+
 mark() {
     # Mark the given target as up-to-date.
     local configdir target dir state
