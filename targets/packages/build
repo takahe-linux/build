@@ -9,53 +9,66 @@ source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 
-# At this stage, we can assume that all of the dependencies have been built.
-# We need to do quite a bit here...
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
-# Create the clean chroot dir.
-# TODO: Add locking...
 # TODO: Whether or not to use TMPDIR should be determined by the amount of
 #       available space on TMPDIR, and the predicted RAM usage for the given
 #       package.
 cleanchroot="${TMPDIR:-/tmp}/builder-${config["id"]}/"
-if [ ! -e "${cleanchroot}" ]; then
-    mkdir "${cleanchroot}"
-elif [ ! -d "${cleanchroot}" ]; then
-    error 1 "Clean chroot dir '${cleanchroot}' already exists, but is not a dir!"
-fi
-# Create the basedir for this particular build.
 basedir="${cleanchroot}/${target}"
-if [ -e "${basedir}" ]; then
-    error 1 "Build dir '${basedir}' already exists!"
-fi
-mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
+mkcleanchrootdir() {
+    # Create the clean chroot dir.
+    # TODO: Add locking...
+    if [ ! -e "${cleanchroot}" ]; then
+        mkdir "${cleanchroot}"
+    elif [ ! -d "${cleanchroot}" ]; then
+        error 1 "Expected a dir at '${cleanchroot}'!"
+    fi
+    # Create the basedir for this particular build.
+    if [ -e "${basedir}" ]; then
+        error 1 "Build dir '${basedir}' already exists!"
+    fi
+    mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
+}
+mkcleanchrootdir
 
-# Populate the chroot.
 chrootpacman() {
     fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
         --root "${basedir}" "$@" || \
         error 1 "Failed to run pacman on chroot!"
 }
 
-# TODO: This takes a while, and is dependent on the local pacman.conf.
-#       What would be a better method?
-message info "Populating the chroot..."
-mkdir -p "${basedir}/var/lib/pacman" && \
-    fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
-    chrootpacman --noconfirm -S base-devel
+populatechroot() {
+    # Populate the chroot.
+    # TODO: This takes a while, and is dependent on the local pacman.conf.
+    #       What would be a better method?
+    #       Can I cache this (in a tarball, perhaps?) and extract it before
+    #       building anything?
+    #       What happens when this is updated?
+    #       Should I rebuild everything, or leave them alone?
+    message info "Populating the chroot..."
+    mkdir -p "${basedir}/var/lib/pacman" && \
+        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
+        chrootpacman --noconfirm -S base-devel
+}
+populatechroot
 
-# Find the source tarball.
-message info "Unpacking the source tarball..."
-srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
-    error 1 "Failed to find a source tarball for '${target}'!"
-# Extract the source tar.
-srctardir="${basedir}/$(echo "${srctar}" | rev | cut -d'-' -f3- | rev)"
-pushd "${basedir}" > /dev/null
-bsdtar -xf "${configdir}/srctar/${srctar}" || \
-    error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
-popd > /dev/null
+extractsrctar() {
+    # Find and extract the source tarball.
+
+    message info "Unpacking the source tarball..."
+    srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
+        error 1 "Failed to find a source tarball for '${target}'!"
+
+    # Extract the source tar.
+    srctardir="${basedir}/$(echo "${srctar}" | rev | cut -d'-' -f3- | rev)"
+    pushd "${basedir}" > /dev/null
+    bsdtar -xf "${configdir}/srctar/${srctar}" || \
+        error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
+    popd > /dev/null
+}
+extractsrctar
 
 # Dependency resolution.
 # TODO: Dependencies *should* be evaluated using a graph.
@@ -177,35 +190,45 @@ while IFS= read line; do
     fi
 done < <(printf "%s\n" "${deps}")
 
-message info "Generating the config files..."
-# TODO: We should extract some of these values from the local makepkg.conf,
-#       if one exists (eg packager, "-jx", ...).
-genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
-# Add the pacman config file.
-cat > "${basedir}/etc/pacman.conf" << EOF
+genconfigfiles() {
+    # Generate the config files.
+
+    message info "Generating the config files..."
+
+    # Generate the makepkg config file.
+    genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
+
+    # Add the pacman config file.
+    cat > "${basedir}/etc/pacman.conf" << EOF
 EOF
 
-# Create the build script.
-if [ "${prefix}" == "packages" ]; then
-    # TODO: Remove target-specific hack.
-    makepkgargs="-d --nocheck"
-fi
-cat > "${basedir}/build.sh" << EOF
+    # Create the build script.
+    if [ "${prefix}" == "packages" ]; then
+        # TODO: Remove prefix-specific hack.
+        makepkgargs="-d --nocheck"
+    fi
+    cat > "${basedir}/build.sh" << EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
 cd "${srctardir##*/}"
 makepkg ${makepkgargs}
 EOF
-chmod +x "${basedir}/build.sh"
+    chmod +x "${basedir}/build.sh"
+}
+genconfigfiles
 
-# Build the package.
-message info "Building the package..."
-# TODO: We appear to need this 'special' path for fakechroot chroots, as
-#       fakechroot is not 100% reliable...
-PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
-    fakechroot chroot "${basedir}" /build.sh || \
-    error "$?" "Running makepkg failed!"
+buildpackage() {
+    # Build the package.
+    message info "Building the package..."
+    # TODO: We appear to need this 'special' path for fakechroot chroots, as
+    #       fakechroot is not 100% reliable...
+    # TODO: Find a better fakechroot alternative?
+    PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
+        fakechroot chroot "${basedir}" /build.sh || \
+        error "$?" "Running makepkg failed!"
+}
+buildpackage
 
 # Copy the built packages into the pkg dir.
 # TODO: Locally built (toolchain) packages are architecture specific, and
