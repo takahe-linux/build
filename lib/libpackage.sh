@@ -75,6 +75,7 @@ localmakepkgconf() {
 
 genmakepkgconf() {
     # Write a temporary config script to stdout.
+    # TODO: Figure out how to cache the results of this.
     local configdir="$1"
     local pkgdir="$2"
 
