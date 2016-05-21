@@ -12,6 +12,12 @@ source "$(dirname "$0")/../../lib/libpackage.sh"
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
+# There are three main steps here:
+# prepare a main sysroot
+# install required packages
+# chroot/qemu/whatever in, build the package
+# clean up
+
 # TODO: Whether or not to use TMPDIR should be determined by the amount of
 #       available space on TMPDIR, and the predicted RAM usage for the given
 #       package.
@@ -31,12 +37,11 @@ mkcleanchrootdir() {
     fi
     mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 }
-mkcleanchrootdir
 
 chrootpacman() {
     fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
         --root "${basedir}" "$@" || \
-        error 1 "Failed to run pacman on chroot!"
+        error 1 "Failed to run pacman on the chroot!"
 }
 
 populatechroot() {
@@ -52,7 +57,6 @@ populatechroot() {
         fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
         chrootpacman --noconfirm -S base-devel
 }
-populatechroot
 
 extractsrctar() {
     # Find and extract the source tarball.
@@ -68,6 +72,48 @@ extractsrctar() {
         error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
     popd > /dev/null
 }
+
+genconfigfiles() {
+    # Generate the config files.
+
+    message info "Generating the config files..."
+
+    # Generate the makepkg config file.
+    genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
+
+    # Add the pacman config file.
+    cat > "${basedir}/etc/pacman.conf" << EOF
+EOF
+
+    # Create the build script.
+    if [ "${prefix}" == "packages" ]; then
+        # TODO: Remove prefix-specific hack.
+        makepkgargs="-d --nocheck"
+    fi
+    cat > "${basedir}/build.sh" << EOF
+#!/usr/bin/bash
+# Automatically generated build script - do not modify!
+set -e
+cd "${srctardir##*/}"
+makepkg ${makepkgargs}
+EOF
+    chmod +x "${basedir}/build.sh"
+}
+
+buildpackage() {
+    # Build the package.
+    message info "Building the package..."
+    # TODO: We appear to need this 'special' path for fakechroot chroots, as
+    #       fakechroot is not 100% reliable...
+    # TODO: Find a better fakechroot alternative?
+    PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
+        fakechroot chroot "${basedir}" /build.sh || \
+        error "$?" "Running makepkg failed!"
+}
+
+# Prepare the chroot.
+mkcleanchrootdir
+populatechroot
 extractsrctar
 
 # Dependency resolution.
@@ -171,9 +217,7 @@ crossinstall() {
     done < <(printf "%s\n" "${pkgfiles}")
 }
 # Generate the deps and evaluate them.
-while IFS= read line; do
-    deptype="$(printf "${line}" | cut -d= -f1 | sed -e 's:[ \t]::g')"
-    dep="$(printf "${line}" | cut -d= -f2- | sed -e 's:[ \t]::g')"
+while IFS="= $(printf '\t\n')" read deptype dep; do
     if [ -z "${dep}" ]; then
         continue
     fi
@@ -190,44 +234,9 @@ while IFS= read line; do
     fi
 done < <(printf "%s\n" "${deps}")
 
-genconfigfiles() {
-    # Generate the config files.
-
-    message info "Generating the config files..."
-
-    # Generate the makepkg config file.
-    genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
-
-    # Add the pacman config file.
-    cat > "${basedir}/etc/pacman.conf" << EOF
-EOF
-
-    # Create the build script.
-    if [ "${prefix}" == "packages" ]; then
-        # TODO: Remove prefix-specific hack.
-        makepkgargs="-d --nocheck"
-    fi
-    cat > "${basedir}/build.sh" << EOF
-#!/usr/bin/bash
-# Automatically generated build script - do not modify!
-set -e
-cd "${srctardir##*/}"
-makepkg ${makepkgargs}
-EOF
-    chmod +x "${basedir}/build.sh"
-}
 genconfigfiles
 
-buildpackage() {
-    # Build the package.
-    message info "Building the package..."
-    # TODO: We appear to need this 'special' path for fakechroot chroots, as
-    #       fakechroot is not 100% reliable...
-    # TODO: Find a better fakechroot alternative?
-    PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
-        fakechroot chroot "${basedir}" /build.sh || \
-        error "$?" "Running makepkg failed!"
-}
+# Build the package.
 buildpackage
 
 # Copy the built packages into the pkg dir.
