@@ -140,9 +140,8 @@ findpkgdeps() {
     # Evaluate the deps piped in on stdin to dirs.
     local configdir="$1"
     local prefix="$2"
-    while IFS= read line; do
-        local deptype="$(printf "${line}" | cut -d= -f1 | sed -e 's:[ \t]::g')"
-        local dep="$(printf "${line}" | cut -d= -f2- | sed -e 's:[ \t]::g')"
+    local deptype dep
+    while IFS="= $(printf '\t\n')" read deptype dep; do
         if [ -z "${dep}" ]; then
             continue
         fi
@@ -181,7 +180,7 @@ findpkgdeps() {
         if [ "${skip_missing}" == "false" ] && [ -z "${providers}" ]; then
             error 4 "Found no providers for '${dep}' of type '${deptype}'!"
         elif [ -n "${providers}" ]; then
-            printf "%s\n" "${providers}"
+            printf "%s %s\n" "${dep}" "${providers}"
             return
         fi
     done < /dev/stdin
