@@ -16,14 +16,6 @@ exists "${path}/PKGBUILD" || exit "$?"
 #       given BUILDDIR, or something else should.
 basedir="${BUILDDIR}/builder-${config[id]}/${target}"
 
-mkbuilddir() {
-    # Create the basedir for this particular build.
-    if [ -e "${basedir}" ]; then
-        error 1 "Build dir '${basedir}' already exists!"
-    fi
-    mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
-}
-
 extractsrctar() {
     # Find and extract the source tarball.
     local configdir="$1"
@@ -104,7 +96,10 @@ buildpackage() {
 }
 
 # Prepare the chroot.
-mkbuilddir
+if [ -e "${basedir}" ]; then
+    error 1 "Build dir '${basedir}' already exists!"
+fi
+mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 populatechroot
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
