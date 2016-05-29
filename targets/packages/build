@@ -12,25 +12,11 @@ source "$(dirname "$0")/../../lib/libpackage.sh"
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
-# There are three main steps here:
-# prepare a main sysroot
-# install required packages
-# chroot/qemu/whatever in, build the package
-# clean up
+# TODO: We should change BUILDDIR if there will not be enough space on the
+#       given BUILDDIR, or something else should.
+basedir="${BUILDDIR}/builder-${config[id]}/${target}"
 
-# TODO: Whether or not to use TMPDIR should be determined by the amount of
-#       available space on TMPDIR, and the predicted RAM usage for the given
-#       package.
-cachedir="${BUILDDIR}/builder-${config["id"]}/"
-basedir="${cachedir}/${target}"
 mkbuilddir() {
-    # Create the clean chroot dir.
-    # TODO: Add locking...
-    if [ ! -e "${cachedir}" ]; then
-        mkdir "${cachedir}"
-    elif [ ! -d "${cachedir}" ]; then
-        error 1 "Expected a dir at '${cachedir}'!"
-    fi
     # Create the basedir for this particular build.
     if [ -e "${basedir}" ]; then
         error 1 "Build dir '${basedir}' already exists!"
@@ -56,21 +42,6 @@ populatechroot() {
     mkdir -p "${basedir}/var/lib/pacman" && \
         fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
         chrootpacman --noconfirm -S base-devel
-}
-
-extractsrctar() {
-    # Find and extract the source tarball.
-
-    message info "Unpacking the source tarball..."
-    srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
-        error 1 "Failed to find a source tarball for '${target}'!"
-
-    # Extract the source tar.
-    srctardir="${basedir}/$(echo "${srctar}" | rev | cut -d'-' -f3- | rev)"
-    pushd "${basedir}" > /dev/null
-    bsdtar -xf "${configdir}/srctar/${srctar}" || \
-        error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
-    popd > /dev/null
 }
 
 genconfigfiles() {
@@ -114,7 +85,10 @@ buildpackage() {
 # Prepare the chroot.
 mkbuilddir
 populatechroot
-extractsrctar
+# Extract the source tarball.
+message info "Unpacking the source tarball..."
+srctardir="$(extractsrctar "${configdir}" "${target}" "${basedir}")" || \
+    error 1 "Failed to extract the source tarball!"
 
 # Dependency resolution.
 # TODO: Dependencies *should* be evaluated using a graph.
