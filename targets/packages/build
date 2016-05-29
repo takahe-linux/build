@@ -44,10 +44,31 @@ populatechroot() {
         chrootpacman --noconfirm -S base-devel
 }
 
+extractsrctar() {
+    # Find and extract the source tarball.
+    local configdir="$1"
+    local target="$2"
+    local outdir="$3"       # Dir to extract to.
+
+    # Find the source tarball.
+    local srctar
+    srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
+        error 1 "Failed to find a source tarball for '${target}'!"
+
+    # Extract the source tarball.
+    pushd "${outdir}" > /dev/null
+    bsdtar -xf "${configdir}/srctar/${srctar}" || \
+        error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
+    # Move the source tarball to a more standard location.
+    mv "$(printf "%s" "${srctar}" | rev | cut -d'-' -f3- | rev)" "pkg"
+    popd > /dev/null
+}
+
 genconfigfiles() {
     # Generate the config files.
-
-    message info "Generating the config files..."
+    local configdir="$1"
+    local target="$2"
+    local basedir="$3"
 
     # Generate the makepkg config file.
     genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
@@ -57,7 +78,7 @@ genconfigfiles() {
 EOF
 
     # Create the build script.
-    if [ "${prefix}" == "packages" ]; then
+    if [ "${target%%/*}" == "packages" ]; then
         # TODO: Remove prefix-specific hack.
         makepkgargs="-d --nocheck"
     fi
@@ -65,7 +86,7 @@ EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
-cd "${srctardir##*/}"
+cd "pkg"
 makepkg ${makepkgargs}
 EOF
     chmod +x "${basedir}/build.sh"
@@ -87,8 +108,7 @@ mkbuilddir
 populatechroot
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
-srctardir="$(extractsrctar "${configdir}" "${target}" "${basedir}")" || \
-    error 1 "Failed to extract the source tarball!"
+extractsrctar "${configdir}" "${target}" "${basedir}"
 
 # Dependency resolution.
 # TODO: Dependencies *should* be evaluated using a graph.
@@ -208,7 +228,9 @@ while IFS="= $(printf '\t\n')" read deptype dep; do
     fi
 done < <(printf "%s\n" "${deps}")
 
-genconfigfiles
+# Generate the config files.
+message info "Generating the config files..."
+genconfigfiles "${configdir}" "${target}" "${basedir}"
 
 # Build the package.
 buildpackage
@@ -216,7 +238,7 @@ buildpackage
 # Copy the built packages into the pkg dir.
 # TODO: Locally built (toolchain) packages are architecture specific, and
 #       should be dumped into a different directory?
-cp "${srctardir}"/*.pkg.tar.* "${configdir}/pkgs/"
+cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/"
 
 # Clean up the build dir.
 message info "Cleaning up..."

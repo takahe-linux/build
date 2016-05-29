@@ -198,25 +198,3 @@ findpkgdeps() {
         fi
     done < /dev/stdin
 }
-
-extractsrctar() {
-    # Find and extract the source tarball.
-    local configdir="$1"
-    local target="$2"
-    local outdir="$3"       # Dir to extract to.
-
-    # Find the source tarball.
-    local srctar
-    srctar="$(pkgdirsrctar "${configdir}" "${target}")" || \
-        error 1 "Failed to find a source tarball for '${target}'!"
-
-    # Extract the source tarball.
-    pushd "${outdir}" > /dev/null
-    bsdtar -xf "${configdir}/srctar/${srctar}" || \
-        error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
-    popd > /dev/null
-
-    # Print the path to the final dir.
-    printf "%s" "${outdir}/$(printf "%s" "${srctar}" | \
-        rev | cut -d'-' -f3- | rev)"
-}
