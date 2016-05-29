@@ -41,8 +41,8 @@ pkgdirpackages() {
     local pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     local arch="$(sed -n "${srcinfo}" -e '/arch = /p' | sed -e 's:.*= ::')"
 
-    # Source the global makepkg.conf to find the expected architecture.
-    . /etc/makepkg.conf
+    # Set the CARCH variable to the current architecture.
+    local CARCH="$(uname -m)"
     # Set some other expected variables from the config.
     . <(genmakepkgconf "${configdir}" "${pkgdir}") || \
         error 1 "Failed to generate a temporary config file!"
