@@ -21,15 +21,15 @@ exists "${path}/PKGBUILD" || exit "$?"
 # TODO: Whether or not to use TMPDIR should be determined by the amount of
 #       available space on TMPDIR, and the predicted RAM usage for the given
 #       package.
-cleanchroot="${TMPDIR:-/tmp}/builder-${config["id"]}/"
-basedir="${cleanchroot}/${target}"
-mkcleanchrootdir() {
+cachedir="${BUILDDIR}/builder-${config["id"]}/"
+basedir="${cachedir}/${target}"
+mkbuilddir() {
     # Create the clean chroot dir.
     # TODO: Add locking...
-    if [ ! -e "${cleanchroot}" ]; then
-        mkdir "${cleanchroot}"
-    elif [ ! -d "${cleanchroot}" ]; then
-        error 1 "Expected a dir at '${cleanchroot}'!"
+    if [ ! -e "${cachedir}" ]; then
+        mkdir "${cachedir}"
+    elif [ ! -d "${cachedir}" ]; then
+        error 1 "Expected a dir at '${cachedir}'!"
     fi
     # Create the basedir for this particular build.
     if [ -e "${basedir}" ]; then
@@ -112,7 +112,7 @@ buildpackage() {
 }
 
 # Prepare the chroot.
-mkcleanchrootdir
+mkbuilddir
 populatechroot
 extractsrctar
 

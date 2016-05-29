@@ -4,6 +4,9 @@
 PKGEXT='.pkg.tar.xz'
 SRCEXT='.src.tar.gz'
 
+# Set a standard BUILDDIR, which can be overridden if required.
+BUILDDIR="${TMPDIR:-/tmp}"
+
 pkgdirsrctar() {
     # Print the source tarball path for the given package dir.
     local configdir="$1"
@@ -103,12 +106,12 @@ _toolroot="/opt/${_target_triplet}"
 PKGEXT="%s"
 SRCEXT="%s"
 
-# Set BUILDDIR to something sane (for building src tarballs).
-BUILDDIR="/tmp/builder-%s"
+# Set BUILDDIR to something sane.
+BUILDDIR="%s"
 ' \
         "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
         "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}" \
-        "${config[id]}"
+        "${BUILDDIR}/builder-${config[id]}"
 
     # If a package config file exists, add it...
     local local_config="${configdir}/src/${pkgdir%%/*}/makepkg.conf"
