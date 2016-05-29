@@ -76,17 +76,24 @@ localmakepkgconf() {
 genmakepkgconf() {
     # Write a temporary config script to stdout.
     local configdir="$1"
-    local pkgdir="$2"
+    local pkgdir="${2%%/*}"
 
-    # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
-    # TODO: Use something else?
-    printf '# Local configs'
-    localmakepkgconf | /usr/bin/grep -e '^PACKAGER='
-    localmakepkgconf | /usr/bin/grep -e '^MAKEFLAGS="'
+    local outfile="/tmp/builder-${config[id]}/cache/makepkgconf-${pkgdir}"
+    if [ ! -f "${outfile}" ]; then
+        message debug "Generating makepkgconf for '${pkgdir}'..."
+        if [ ! -d "${outfile%/*}" ]; then
+            mkdir -p "${outfile%/*}"
+        fi
 
-    # Print a 'config.sh' equivalent.
-    # We also standardise PKGEXT and SRCEXT.
-    printf '
+        # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
+        # TODO: Use something else?
+        printf '# Local configs' > "${outfile}"
+        localmakepkgconf | /usr/bin/grep -e '^PACKAGER=' -e '^MAKEFLAGS=' \
+            >> "${outfile}"
+
+        # Print a 'config.sh' equivalent.
+        # We also standardise PKGEXT and SRCEXT.
+        printf '
 # Standard config variables.
 _target_arch="%s"
 _target_arch_alias="%s"
@@ -106,15 +113,18 @@ SRCEXT="%s"
 # Set BUILDDIR to something sane (for building src tarballs).
 BUILDDIR="/tmp/builder-%s"
 ' \
-        "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
-        "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}" \
-        "${config[id]}"
+            "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
+            "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}" \
+            "${config[id]}" >> "${outfile}"
 
-    # If a package config file exists, add it...
-    local local_config="${configdir}/src/${pkgdir%%/*}/makepkg.conf"
-    if [ -f "${local_config}" ]; then
-        cat "${local_config}"
+        # If a package config file exists, add it...
+        local local_config="${configdir}/src/${pkgdir}/makepkg.conf"
+        if [ -f "${local_config}" ]; then
+            cat "${local_config}" >> "${outfile}"
+        fi
     fi
+
+    cat "${outfile}"
 }
 
 findpkgdir() {
