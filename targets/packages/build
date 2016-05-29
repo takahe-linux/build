@@ -24,26 +24,6 @@ mkbuilddir() {
     mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 }
 
-chrootpacman() {
-    fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
-        --root "${basedir}" "$@" || \
-        error 1 "Failed to run pacman on the chroot!"
-}
-
-populatechroot() {
-    # Populate the chroot.
-    # TODO: This takes a while, and is dependent on the local pacman.conf.
-    #       What would be a better method?
-    #       Can I cache this (in a tarball, perhaps?) and extract it before
-    #       building anything?
-    #       What happens when this is updated?
-    #       Should I rebuild everything, or leave them alone?
-    message info "Populating the chroot..."
-    mkdir -p "${basedir}/var/lib/pacman" && \
-        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
-        chrootpacman --noconfirm -S base-devel
-}
-
 extractsrctar() {
     # Find and extract the source tarball.
     local configdir="$1"
@@ -90,6 +70,26 @@ cd "pkg"
 makepkg ${makepkgargs}
 EOF
     chmod +x "${basedir}/build.sh"
+}
+
+chrootpacman() {
+    fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
+        --root "${basedir}" "$@" || \
+        error 1 "Failed to run pacman on the chroot!"
+}
+
+populatechroot() {
+    # Populate the chroot.
+    # TODO: This takes a while, and is dependent on the local pacman.conf.
+    #       What would be a better method?
+    #       Can I cache this (in a tarball, perhaps?) and extract it before
+    #       building anything?
+    #       What happens when this is updated?
+    #       Should I rebuild everything, or leave them alone?
+    message info "Populating the chroot..."
+    mkdir -p "${basedir}/var/lib/pacman" && \
+        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
+        chrootpacman --noconfirm -S base-devel
 }
 
 buildpackage() {
