@@ -44,6 +44,7 @@ genconfigfiles() {
 
     # Generate the makepkg config file.
     genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
+    printf "unset BUILDDIR" >> "${basedir}/etc/makepkg.conf"
 
     # Add the pacman config file.
     cat > "${basedir}/etc/pacman.conf" << EOF
@@ -64,26 +65,6 @@ EOF
     chmod +x "${basedir}/build.sh"
 }
 
-chrootpacman() {
-    fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
-        --root "${basedir}" "$@" || \
-        error 1 "Failed to run pacman on the chroot!"
-}
-
-populatechroot() {
-    # Populate the chroot.
-    # TODO: This takes a while, and is dependent on the local pacman.conf.
-    #       What would be a better method?
-    #       Can I cache this (in a tarball, perhaps?) and extract it before
-    #       building anything?
-    #       What happens when this is updated?
-    #       Should I rebuild everything, or leave them alone?
-    message info "Populating the chroot..."
-    mkdir -p "${basedir}/var/lib/pacman" && \
-        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
-        chrootpacman --noconfirm -S base-devel
-}
-
 buildpackage() {
     # Build the package.
     message info "Building the package..."
@@ -95,12 +76,37 @@ buildpackage() {
         error "$?" "Running makepkg failed!"
 }
 
+hostpacman() {
+    # Run pacman on the host.
+    local basedir="$1"
+    shift
+
+    fakechroot fakeroot pacman --cachedir /var/cache/pacman/pkg \
+        --noconfirm --root "${basedir}" "$@" || \
+        error 1 "Failed to run pacman on the chroot!"
+}
+
 # Prepare the chroot.
+# Create the base dir.
 if [ -e "${basedir}" ]; then
     error 1 "Build dir '${basedir}' already exists!"
 fi
 mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
-populatechroot
+# Populate the chroot.
+message info "Populating the chroot..."
+if [ "${prefix}" == "toolchain" ] || [ "${prefix}" == "packages" ]; then
+    # The chroot is a "host" chroot; use the native packages.
+    # TODO: This takes a while, and is dependent on the local pacman.conf.
+    #       What would be a better method?
+    #       Can I cache this (in a tarball, perhaps?) and extract it before
+    #       building anything?
+    mkdir -p "${basedir}/var/lib/pacman" && \
+        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" && \
+        hostpacman "${basedir}" -S base-devel
+else
+    # The chroot is a "target" chroot; use the cross-compiled packages.
+    : # TODO: Implement.
+fi
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
 extractsrctar "${configdir}" "${target}" "${basedir}"
@@ -150,12 +156,12 @@ hostinstall() {
 
             # Install the given package.
             printf "Installing host package file '${pkgfile}'\n"
-            chrootpacman --noconfirm -U "${pkgfile}" || \
+            hostpacman "${basedir}" -U "${pkgfile}" || \
                 error 1 "Failed to install packages to sysroot: ${pkgfile}!"
         done < <(printf "%s\n" "${pkgfiles}")
     else
         # Install the given package which is not provided locally.
-        chrootpacman --noconfirm --needed -S "${pkg}"
+        hostpacman "${basedir}" --needed -S "${pkg}"
     fi
 }
 crossinstall() {
