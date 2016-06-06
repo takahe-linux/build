@@ -86,16 +86,16 @@ hostpacman() {
         error 1 "Failed to run pacman on the chroot!"
 }
 
-# Prepare the chroot.
+# Prepare the sysroot.
 # Create the base dir.
 if [ -e "${basedir}" ]; then
     error 1 "Build dir '${basedir}' already exists!"
 fi
 mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
-# Populate the chroot.
-message info "Populating the chroot..."
+# Populate the sysroot.
+message info "Populating the sysroot..."
 if [ "${prefix}" == "toolchain" ] || [ "${prefix}" == "packages" ]; then
-    # The chroot is a "host" chroot; use the native packages.
+    # The sysroot is a "host" chroot; use the native packages.
     # TODO: This takes a while, and is dependent on the local pacman.conf.
     #       What would be a better method?
     #       Can I cache this (in a tarball, perhaps?) and extract it before
