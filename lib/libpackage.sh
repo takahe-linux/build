@@ -194,7 +194,6 @@ findpkgdeps() {
             error 4 "Found no providers for '${dep}' of type '${deptype}'!"
         elif [ -n "${providers}" ]; then
             printf "%s %s\n" "${dep}" "${providers}"
-            return
         fi
     done < /dev/stdin
 }
