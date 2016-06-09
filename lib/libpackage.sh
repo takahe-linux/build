@@ -90,7 +90,7 @@ genmakepkgconf() {
 
         # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
         # TODO: Use something else?
-        printf '# Local configs' > "${outfile}"
+        printf '# Local configs\n' > "${outfile}"
         localmakepkgconf | /usr/bin/grep -e '^PACKAGER=' -e '^MAKEFLAGS=' \
             >> "${outfile}"
 
@@ -142,7 +142,7 @@ findpkgdir() {
         if [ "${pkg}" == "${target_name}" ]; then
             while IFS="\/ " read provdir provider; do
                 if [ "${provdir}" == "${dir}" ]; then
-                    printf "%s/%s\n" "${provdir}" "${provider}";
+                    printf "%s/%s\n" "${provdir}" "${provider}"
                 fi
             done < <(printf "${providers}\n")
         fi
@@ -180,7 +180,7 @@ findpkgdeps() {
             depdirs="native packages"
             skip_missing="false"
         fi
-        for depdir in $depdirs; do
+        for depdir in ${depdirs}; do
             local providers="$(findpkgdir "${configdir}" "${dep}" \
                 "${depdir}")" \
                 || error 3 "Failed to get providers for '${dep}'!"
