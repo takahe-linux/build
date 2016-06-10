@@ -146,8 +146,10 @@ installdeps() {
     local dep prov
     while IFS=" " read dep prov; do
         checkprov "${dep}" "${prov}"
-        visited["${prov}"]="${dep}"
-        stack+=("${prov}")
+        if [ -z "${visited["${prov}"]+is_set}" ]; then
+            visited["${prov}"]="${dep}"
+            stack+=("${prov}")
+        fi
     done < <(printf "%s\n" "${deps}" | \
         findpkgdeps "${configdir}" "${target%%/*}") || \
         error 3 "Failed to generate the package providers!"
@@ -237,9 +239,6 @@ installtooldeps() {
         error 1 "Cannot install host deps to a native root!"
     fi
 
-    message info "Installing toolchain packages to ${basedir}:"
-    for i in "$@"; do message info "    $i"; done
-
     # Figure out which packages are host packages and which are tool deps.
     local pkg hostdeps toolchaindeps
     declare -a hostdeps
@@ -257,6 +256,9 @@ installtooldeps() {
     #       Can I cache this (in a tarball, perhaps?) and extract it before
     #       building anything? Would that be faster?
     hostdeps+=('base-devel')
+
+    message info "Installing toolchain packages to ${basedir}:"
+    for i in ${toolchaindeps[@]} ${hostdeps[@]}; do message info "    $i"; done
 
     # Initialise the pacman sync databases.
     mkdir -p "${basedir}/var/lib/pacman" && \
