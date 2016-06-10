@@ -27,7 +27,6 @@ Things that the new system does not fix (yet):
 - No support for 'native' builds. (v0.1.6)
 - No support for test scripts. (v0.1.6)
 - Trivial (comments, whitespace, etc) fixes still cause rebuilds. (v0.1.6)
-- We still use recursive dependency walks... (v0.1.6)
 - No build profiling (used disk space, etc). (v0.1.7)
 - No "check for updates" script support". (v0.1.7)
 - Asynchronous and networked builds. (v0.1.7)
@@ -48,7 +47,8 @@ Things that have regressed:
 
 # Usage #
 
-See rebuild.sh, mksysimage.sh, and popsysimage.sh
+To generate/update the packages:
+ ./rebuild.sh _configdir_
 
-./rebuild.sh _configdir_
+To build an image suitable for using in QEMU, see mksysimage and popsysimage.
 
