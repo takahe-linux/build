@@ -160,25 +160,21 @@ findpkgdeps() {
         fi
         local depdir skip_missing
         if [ "${deptype}" == "hostdepends" ]; then
-            # Find the providers; we ignore missing deps, and assume that
-            # they will be installed from the host distro's repos.
             depdirs="toolchain"
-            skip_missing="true"
+            host_missing="true"
         elif [ "${prefix}" == "toolchain" ] && \
             [ "${deptype}" != "targetdepends" ]; then
-            # Find the providers; we ignore missing deps, and assume that
-            # they will be installed from the host distro's repos.
             depdirs="toolchain"
-            skip_missing="true"
+            host_missing="true"
         elif [ "${prefix}" == "packages" ]; then
             # Find the providers; we assume that they will be cross-compiled.
             depdirs="packages"
-            skip_missing="false"
+            host_missing="false"
         else
             # Find the providers; we assume that they will be cross-compiled
             # or built natively.
             depdirs="native packages"
-            skip_missing="false"
+            host_missing="false"
         fi
         for depdir in ${depdirs}; do
             local providers="$(findpkgdir "${configdir}" "${dep}" \
@@ -190,8 +186,13 @@ findpkgdeps() {
             fi
         done
         # Check that we did find a provider.
-        if [ "${skip_missing}" == "false" ] && [ -z "${providers}" ]; then
-            error 4 "Found no providers for '${dep}' of type '${deptype}'!"
+        if [ -z "${providers}" ]; then
+            if [ "${host_missing}" == "false" ]; then
+                error 4 "Found no providers for '${dep}' of type '${deptype}'!"
+            else
+                # We use a "fake" host package instead.
+                printf "%s host/%s\n" "${dep}" "${dep}"
+            fi
         elif [ -n "${providers}" ]; then
             printf "%s %s\n" "${dep}" "${providers}"
         fi

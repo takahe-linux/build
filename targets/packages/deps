@@ -26,7 +26,3 @@ pkgpaths="$(printf "%s\n" "${deps}" | \
     findpkgdeps "${configdir}" "${prefix}")" || \
     error "$?" "Failed to find the package dirs!"
 printf "%s\n" "${pkgpaths}" | cut -d' ' -f2-
-# Special case 'native' packages so that they depend on base and base-devel.
-if [ "${prefix}" == "native" ]; then
-    printf "targets/base\ntargets/build\n"
-fi

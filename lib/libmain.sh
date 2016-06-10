@@ -74,6 +74,12 @@ check_configdir() {
         fi
     done
 
+    if [ ! -x "${configdir}/qemu" ]; then
+        # TODO: Think of a better way of doing this; maybe I just need the
+        #       arguments? Can I store it in the config file?
+        error 1 "QEMU executable script does not exist!"
+    fi
+
     # Check the config file.
     load_config "${configfile}"
     # TODO: Do not require arch_alias, default to the value of 'arch' instead.

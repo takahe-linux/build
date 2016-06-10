@@ -73,15 +73,19 @@ buildpackage() {
     message info "Building the package..."
 
     if [ "${prefix}" == "native" ]; then
-        error 1 "QEMU support is not yet implemented!"
         # TODO: How much RAM is a good amount?
-        # TODO: Can I use /build.sh as an init?
-        "${configdir}/qemu" \
-            -kernel $kernel \
-            -append "console=ttyS0 init=/build.sh root=/dev/sda1 panic=10" \
-            -hda "fat:${basedir}" \
+        # TODO: Is 'none' right?
+        # TODO: Figure out when I can use KVM.
+        fakeroot "${configdir}/qemu" \
+            -kernel "${basedir}/boot/vmlinuz" \
+            -append "console=ttyS0 init=/usr/bin/init
+                root=r rootfstype=9p rootflags=trans=virtio panic=10" \
+            -fsdev local,id=r,path="${basedir}",security_model=none,readonly \
+            -device virtio-9p-pci,fsdev=r,mount_tag=r \
             -m 128 \
-            -no-reboot -nographic
+            -no-reboot -nographic || \
+            error "$?" "Running qemu failed!"
+        # TODO: Check the results.
     else
         # TODO: We appear to need this 'special' path for fakechroot chroots,
         #       as fakechroot is not 100% reliable...
@@ -133,7 +137,7 @@ installdeps() {
         visited["${prov}"]="${dep}"
         stack+=("${prov}")
     done < <(printf "%s\n" "${deps}" | \
-        findpkgdeps "${configdir}" "${current%%/*}") || \
+        findpkgdeps "${configdir}" "${target%%/*}") || \
         error 3 "Failed to generate the package providers!"
     
 
@@ -144,6 +148,17 @@ installdeps() {
         # Pop the item off the top of the stack.
         local current="${stack[-1]}"
         stack=(${stack[@]:0:$(expr "${#stack[@]}" - 1)})
+
+        # Add the item to the appropriate list.
+        case "${current%%/*}" in
+            toolchain) tooldepends+=("${current}");;
+            packages) crossdepends+=("${current}");;
+            native) nativedepends+=("${current}");;
+            host) # For host dependencies, we don't need to recurse.
+                tooldepends+=("${current}")
+                continue;;
+            *) error 2 "Unknown provider prefix '${current%%/*}'!"
+        esac
 
         # Process the dependencies.
         local dep prov
@@ -162,15 +177,6 @@ installdeps() {
             -e '/^[ \t]*depends = /p' | \
             findpkgdeps "${configdir}" "${current%%/*}") || \
             error 3 "Failed to generate the package providers!"
-
-        # Add the item to the appropriate list.
-        case "${current%%/*}" in
-            toolchain) tooldepends+=("${current}");;
-            packages) crossdepends+=("${current}");;
-            native) nativedepends+=("${current}");;
-            *) error 2 "Unknown provider prefix '${current%%/*}'!"
-        esac
-
     done
 
     # Install the dependencies.
@@ -213,7 +219,7 @@ installtooldeps() {
     local prefix="$2"
     local basedir="$3"
     shift 3
-    if [ "$#" -eq 0 ]; then return; fi
+    if [ "$#" -eq 0 ] && [ "${prefix}" != "packages" ]; then return; fi
 
     if [ "${prefix}" == "native" ]; then
         error 1 "Cannot install host deps to a native root!"
@@ -222,16 +228,31 @@ installtooldeps() {
     message info "Installing toolchain packages to ${basedir}:"
     for i in "$@"; do message info "    $i"; done
 
-    # Initialise the pacman sync databases.
-    mkdir -p "${basedir}/var/lib/pacman" && \
-        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" || \
-        error 1 "Failed to copy the host sync databases!"
-    # Install base-devel.
+    # Figure out which packages are host packages and which are tool deps.
+    local pkg hostdeps toolchaindeps
+    declare -a hostdeps
+    declare -a toolchaindeps
+    for pkg in "$@"; do
+        if [ "${pkg%%/*}" == "host" ]; then
+            hostdeps+=("${pkg##*/}")
+        else
+            toolchaindeps+=("${pkg}")
+        fi
+    done
+    # We always install base-devel.
     # TODO: This takes a while, and is dependent on the local pacman.conf.
     #       What would be a better method?
     #       Can I cache this (in a tarball, perhaps?) and extract it before
     #       building anything? Would that be faster?
-    callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -S base-devel 
+    hostdeps+=('base-devel')
+
+    # Initialise the pacman sync databases.
+    mkdir -p "${basedir}/var/lib/pacman" && \
+        fakeroot cp -p -r /var/lib/pacman/sync "${basedir}/var/lib/pacman" || \
+        error 1 "Failed to copy the host sync databases!"
+
+    # Install base-devel.
+    callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -S ${hostdeps[@]}
     
     # Install the given packages.
     callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -U \
@@ -253,7 +274,7 @@ installcrossdeps() {
     fi
 
     message info "Installing cross compiled packages to ${root}:"
-    for i in "$@"; do message info "    $i"; done
+    for i in "${@}"; do message info "    $i"; done
 
     # Set up the root.
     if [ ! -d "${root}/var/lib/pacman" ]; then
@@ -262,7 +283,7 @@ installcrossdeps() {
 
     # Install the given packages.
     callpacman "${root}" --arch "${config[arch]}" \
-        -U $(mappkgs "${configdir}" "$@")
+        -U $(mappkgs "${configdir}" "${@}")
 }
 
 installnativedeps() {
@@ -311,9 +332,8 @@ genconfigfiles "${configdir}" "${target}" "${basedir}"
 buildpackage "${basedir}" "${prefix}"
 
 # Copy the built packages into the pkg dir.
-# TODO: Locally built (toolchain) packages are architecture specific, and
-#       should be dumped into a different directory?
-cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/"
+cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/" || \
+    error 1 "No packages generated!"
 
 # Clean up the build dir.
 message info "Cleaning up..."
