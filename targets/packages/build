@@ -88,7 +88,7 @@ buildpackage() {
         # TODO: Is 'none' right?
         # TODO: Figure out when I can use KVM.
         local tag="rdev"
-        local virtfs="local,id=root,path='${basedir}',security_model=none,readonly,mount_tag=${tag}"
+        local virtfs="local,id=root,path=${basedir},security_model=none,readonly,mount_tag=${tag}"
         fakeroot "qemu-system-${config[arch_alias]}" \
             ${config[qemu-flags]} \
             -kernel "${basedir}/boot/vmlinuz" \
