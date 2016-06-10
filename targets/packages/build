@@ -60,7 +60,7 @@ EOF
         cat > "${basedir}${wrapper}" << EOF
 #!/usr/bin/sh
 # Wrapper for pacman; use the correct system root.
-pacman --root /sysroot "$@"
+pacman --root /sysroot "\$@"
 EOF
         chmod +x "${basedir}/${wrapper}"
     fi
