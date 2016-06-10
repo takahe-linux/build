@@ -15,9 +15,6 @@ main() {
     # Remove all the old, outdated packages and source tarballs.
     local configdir="$1"
 
-    # Load the config.
-    load_config "${configdir}/config"
-
     # Iterate through all of the packages.
     local srctar srctarprefix pkg pkgprefix file
     for dir in "${configdir}/src/"*/*; do
