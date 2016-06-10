@@ -50,17 +50,28 @@ genconfigfiles() {
     cat > "${basedir}/etc/pacman.conf" << EOF
 EOF
 
-    # Create the build script.
+    # Create the pacman wrapper.
+    local wrapper="/usr/bin/pacman"
     if [ "${target%%/*}" == "packages" ]; then
-        # TODO: Remove prefix-specific hack.
-        makepkgargs="-d --nocheck"
+        # TODO: Make this more generic?
+        # We need this when cross compiling; makepkg doesn't know where it
+        # should look, so the dependency checks fail.
+        wrapper="/usr/bin/sysroot-pacman"
+        cat > "${basedir}${wrapper}" << EOF
+#!/usr/bin/sh
+# Wrapper for pacman; use the correct system root.
+pacman --root /sysroot "$@"
+EOF
+        chmod +x "${basedir}/${wrapper}"
     fi
+
+    # Create the build script.
     cat > "${basedir}/build.sh" << EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
 cd "pkg"
-makepkg ${makepkgargs}
+PACMAN='${wrapper}' makepkg
 EOF
     chmod +x "${basedir}/build.sh"
 }
@@ -76,7 +87,8 @@ buildpackage() {
         # TODO: How much RAM is a good amount?
         # TODO: Is 'none' right?
         # TODO: Figure out when I can use KVM.
-        fakeroot "${configdir}/qemu" \
+        fakeroot "qemu-system-${config[arch_alias]}" \
+            ${config[qemu-flags]} \
             -kernel "${basedir}/boot/vmlinuz" \
             -append "console=ttyS0 init=/usr/bin/init
                 root=r rootfstype=9p rootflags=trans=virtio panic=10" \
@@ -190,8 +202,8 @@ installdeps() {
 
 callpacman() {
     # Call pacman on the given sysroot.
-    out="$@"
-    message debug "Running pacman with args '--noconfirm --root $out'"
+    local args="$@"
+    message debug "Running pacman with args '--noconfirm --root ${args}'"
     fakechroot fakeroot pacman --noconfirm --root "$@" || \
         error 1 "Failed to run pacman on the root!"
 }
@@ -252,11 +264,16 @@ installtooldeps() {
         error 1 "Failed to copy the host sync databases!"
 
     # Install base-devel.
-    callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -S ${hostdeps[@]}
+    if [ "${#hostdeps}" -gt 0 ]; then
+        callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -S \
+            ${hostdeps[@]}
+    fi
     
     # Install the given packages.
-    callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -U \
-        $(mappkgs "${configdir}" "$@")
+    if [ "${#toolchaindeps}" -gt 0 ]; then
+        callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -U \
+            $(mappkgs "${configdir}" "${toolchaindeps[@]}")
+    fi
 }
 
 installcrossdeps() {
