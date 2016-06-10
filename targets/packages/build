@@ -87,13 +87,15 @@ buildpackage() {
         # TODO: How much RAM is a good amount?
         # TODO: Is 'none' right?
         # TODO: Figure out when I can use KVM.
+        local tag="rdev"
+        local virtfs="local,id=root,path='${basedir}',security_model=none,readonly,mount_tag=${tag}"
         fakeroot "qemu-system-${config[arch_alias]}" \
             ${config[qemu-flags]} \
             -kernel "${basedir}/boot/vmlinuz" \
-            -append "console=ttyS0 init=/usr/bin/init
-                root=r rootfstype=9p rootflags=trans=virtio panic=10" \
-            -fsdev local,id=r,path="${basedir}",security_model=none,readonly \
-            -device virtio-9p-pci,fsdev=r,mount_tag=r \
+            -append "console=ttyS0 init=/usr/bin/init panic=10
+                root=${tag} rootfstype=9p ro \
+                rootflags=trans=virtio,version=9p2000.L" \
+            -virtfs "${virtfs}" \
             -m 128 \
             -no-reboot -nographic || \
             error "$?" "Running qemu failed!"
