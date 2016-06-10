@@ -160,7 +160,9 @@ findpkgdeps() {
             continue
         fi
         local depdir skip_missing
-        if [ "${deptype}" == "hostdepends" ]; then
+        if [ "${deptype}" == "hostdepends" ] || \
+            [ "${deptype}" == "checkdepends" ]; then
+            # We treat checkdepends as host dependencies.
             depdirs="toolchain"
             host_missing="true"
         elif [ "${prefix}" == "toolchain" ] && \
@@ -168,12 +170,9 @@ findpkgdeps() {
             depdirs="toolchain"
             host_missing="true"
         elif [ "${prefix}" == "packages" ]; then
-            # Find the providers; we assume that they will be cross-compiled.
             depdirs="packages"
             host_missing="false"
         else
-            # Find the providers; we assume that they will be cross-compiled
-            # or built natively.
             depdirs="native packages"
             host_missing="false"
         fi
