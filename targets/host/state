@@ -1,5 +1,4 @@
 #!/usr/bin/sh
-
-# TODO: Decide wether or not to use the host system version as a state.
-
-printf "na"
+# For speed reasons, just print 'na'.
+# We also have issues if the given package name contains a version requirement.
+printf 'na'
