@@ -103,6 +103,7 @@ _target_arch_alias="%s"
 _target_triplet="%s"
 _local_triplet="${CHOST}"
 _target_cflags="%s"
+_target_cppflags="%s"
 _target_ldflags="%s"
 
 # Sysroot is hardcoded to /sysroot.
@@ -117,8 +118,8 @@ SRCEXT="%s"
 BUILDDIR="%s"
 ' \
             "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
-            "${config[cflags]}" "${config[ldflags]}" "${PKGEXT}" "${SRCEXT}" \
-            "${config[id]}" >> "${outfile}"
+            "${config[cflags]}" "${config[cppflags]}" "${config[ldflags]}" \
+            "${PKGEXT}" "${SRCEXT}" "${config[id]}" >> "${outfile}"
 
         # If a package config file exists, add it...
         local local_config="${configdir}/src/${pkgdir}/makepkg.conf"

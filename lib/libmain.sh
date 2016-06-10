@@ -74,21 +74,17 @@ check_configdir() {
         fi
     done
 
-    if [ ! -x "${configdir}/qemu" ]; then
-        # TODO: Think of a better way of doing this; maybe I just need the
-        #       arguments? Can I store it in the config file?
-        error 1 "QEMU executable script does not exist!"
-    fi
-
     # Check the config file.
     load_config "${configfile}"
-    # TODO: Do not require arch_alias, default to the value of 'arch' instead.
-    for key in id arch arch_alias triplet cflags ldflags; do
+    for key in id arch triplet cflags cppflags ldflags qemu-flags; do
         if [ -z "${config["${key}"]}" ]; then
             error 2 "'${key}' is not defined in '${configfile}'!"
         fi
     done
-
+    # Fallback to the value of arch if arch_alias is not given.
+    if [ -z "${config[arch_alias]}" ]; then
+        config[arch_alias]="${config[arch]}"
+    fi
 }
 
 ignore_arg() {
