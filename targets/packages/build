@@ -86,20 +86,33 @@ buildpackage() {
     if [ "${prefix}" == "native" ]; then
         # TODO: How much RAM is a good amount?
         # TODO: Is 'none' right?
-        # TODO: Figure out when I can use KVM.
+
+        # Device tag.
         local tag="rdev"
-        local virtfs="local,id=root,path=${basedir},security_model=none,readonly,mount_tag=${tag}"
-        fakeroot "qemu-system-${config[arch_alias]}" \
-            ${config[qemu-flags]} \
-            -kernel "${basedir}/boot/vmlinuz" \
-            -append "console=ttyS0 init=/usr/bin/init panic=10
+        # filesystem and virtual fs device options.
+        local fs_options="path=${basedir},readonly,mount_tag=${tag}"
+        local virtfs="local,id=root,security_model=none,${fs_options}"
+        # Save the QEMU args.
+        local args="${config[qemu-flags]} \
+            -kernel ${basedir}/boot/vmlinuz \
+            -append 'console=ttyS0 init=/usr/bin/init panic=10
                 root=${tag} rootfstype=9p ro \
-                rootflags=trans=virtio,version=9p2000.L" \
-            -virtfs "${virtfs}" \
+                rootflags=trans=virtio,version=9p2000.L' \
+            -virtfs '${virtfs}' \
             -m 128 \
-            -no-reboot -nographic || \
+            -no-reboot -nographic"
+
+        # Try with KVM first, then fall back on non-kvm.
+        fakeroot "qemu-system-${config[arch_alias]}" -enable-kvm ${args} || \
+        fakeroot "qemu-system-${config[arch_alias]}" ${args} || \
             error "$?" "Running qemu failed!"
-        # TODO: Check the results.
+
+        # Check that everything worked.
+        if [ ! -f "${basedir}/build.log" ]; then
+            error 1 "QEMU did not boot; no log at '${basedir}/build.log!'"
+        elif [ "$(tail -n 1 "${basedir}/build.log")" != "Success!" ]; then
+            error 2 "Build failed - see '${basedir}/build.log'!"
+        fi
     else
         # TODO: We appear to need this 'special' path for fakechroot chroots,
         #       as fakechroot is not 100% reliable...
