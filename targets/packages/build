@@ -84,27 +84,11 @@ buildpackage() {
     message info "Building the package..."
 
     if [ "${prefix}" == "native" ]; then
-        # TODO: How much RAM is a good amount?
-        # TODO: Is 'none' right?
-
-        # Device tag.
-        local tag="rdev"
-        # filesystem and virtual fs device options.
-        local fs_options="path=${basedir},readonly,mount_tag=${tag}"
-        local virtfs="local,id=root,security_model=none,${fs_options}"
-        # Save the QEMU args.
-        local args="${config[qemu-flags]} \
-            -kernel ${basedir}/boot/vmlinuz \
-            -append 'console=ttyS0 init=/usr/bin/init panic=10
-                root=${tag} rootfstype=9p ro \
-                rootflags=trans=virtio,version=9p2000.L' \
-            -virtfs '${virtfs}' \
-            -m 128 \
-            -no-reboot -nographic"
+        # Native packages are different; we currently just use QEMU.
 
         # Try with KVM first, then fall back on non-kvm.
-        fakeroot "qemu-system-${config[arch_alias]}" -enable-kvm ${args} || \
-        fakeroot "qemu-system-${config[arch_alias]}" ${args} || \
+        qemupackage "${basedir}" -enable-kvm || \
+        qemupackage "${basedir}" || \
             error "$?" "Running qemu failed!"
 
         # Check that everything worked.
@@ -121,6 +105,45 @@ buildpackage() {
             fakechroot chroot "${basedir}" /build.sh || \
             error "$?" "Running makepkg failed!"
     fi
+}
+
+qemupackage() {
+    # Run QEMU to build the package.
+    local basedir="$1"
+    shift
+
+    # TODO: Remove build fixes; these should be fixed elsewhere.
+    cat > "${basedir}/run.sh" << EOF
+#!/usr/bin/sh
+
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+
+# Misc fixes.
+ln -s /dev/fd /proc/self/fd
+chmod +s /usr/bin/busybox
+sed -i /usr/bin/makepkg -e 's:--apparent-size::'
+
+# chmod the build directory.
+chgrp -R nobody /pkg
+chmod g+ws /pkg
+
+# Run the build script as 'nobody'.
+su nobody -s /usr/bin/sh -c /build.sh > /build.log && \
+    echo 'Success!' >> build.log
+EOF
+    chmod +x "${basedir}/run.sh"
+
+    local tag="dev"
+    local mem=128 # TODO: How much RAM is enough?
+    fakeroot "qemu-system-${config[arch_alias]}" "$@" \
+        -kernel "${basedir}/boot/vmlinuz" \
+        -append "console=ttyS0 init=/run.sh panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
+        -fsdev local,id=${tag},security_model=passthrough,path=${basedir} \
+        -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
+        -m "${mem}" \
+        -no-reboot -nographic
+    return "$?"
 }
 
 checkprov() {
