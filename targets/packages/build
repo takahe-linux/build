@@ -120,13 +120,16 @@ mount -t proc proc /proc
 mount -t sysfs sys /sys
 
 # Misc fixes.
-ln -s /dev/fd /proc/self/fd
+ln -s /proc/self/fd /dev/fd
 chmod +s /usr/bin/busybox
 sed -i /usr/bin/makepkg -e 's:--apparent-size::'
 
 # chmod the build directory.
 chgrp -R nobody /pkg
 chmod g+ws /pkg
+
+# Clean the build dir.
+rm -rf /pkg/{src,pkg}
 
 # Run the build script as 'nobody'.
 su nobody -s /usr/bin/sh -c /build.sh > /build.log && \
@@ -136,13 +139,29 @@ EOF
 
     local tag="dev"
     local mem=128 # TODO: How much RAM is enough?
-    fakeroot "qemu-system-${config[arch_alias]}" "$@" \
-        -kernel "${basedir}/boot/vmlinuz" \
-        -append "console=ttyS0 init=/run.sh panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
-        -fsdev local,id=${tag},security_model=passthrough,path=${basedir} \
-        -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
-        -m "${mem}" \
-        -no-reboot -nographic
+
+    # Generate the script.
+    message info "Writing qemu script"
+    rm -f "${basedir}/qemu.sh"
+    cat > "${basedir}/qemu.sh" << EOF
+#!/usr/bin/sh
+init="\$1"
+shift
+
+fakeroot "qemu-system-${config[arch_alias]}" "\$@" \
+    -kernel "${basedir}/boot/vmlinuz" \
+    -append "console=ttyS0 init=\${init} panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
+    -fsdev local,id=${tag},security_model=passthrough,path=${basedir} \
+    -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
+    -m "${mem}" \
+    -no-reboot -nographic
+exit "\$?"
+EOF
+    chmod +x "${basedir}/qemu.sh"
+    
+    # Run qemu and exit.
+    message info "Running qemu with extra args '$@'"
+    "${basedir}/qemu.sh" "/run.sh" "$@"
     return "$?"
 }
 
