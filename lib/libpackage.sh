@@ -119,7 +119,8 @@ BUILDDIR="%s"
 ' \
             "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
             "${config[cflags]}" "${config[cppflags]}" "${config[ldflags]}" \
-            "${PKGEXT}" "${SRCEXT}" "${config[id]}" >> "${outfile}"
+            "${PKGEXT}" "${SRCEXT}" \
+            "${BUILDDIR}/builder-${config[id]}" >> "${outfile}"
 
         # If a package config file exists, add it...
         local local_config="${configdir}/src/${pkgdir}/makepkg.conf"
