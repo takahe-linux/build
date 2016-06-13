@@ -24,11 +24,12 @@ Things that the new system does not fix (yet):
 
 - No signal handling. (v0.1.6)
 - Massive number of TODO's. (v0.1.6)
-- No support for 'native' builds. (v0.1.6)
 - No support for test scripts. (v0.1.6)
 - Trivial (comments, whitespace, etc) fixes still cause rebuilds. (v0.1.6)
-- No build profiling (used disk space, etc). (v0.1.7)
-- No "check for updates" script support". (v0.1.7)
+- Package directories should not be identified by name, but by a file which
+  contains the required information. (v0.1.7)
+- No build profiling (used disk space, memory, etc). (v0.1.7)
+- No "check for updates" script support. (v0.1.7)
 - Asynchronous and networked builds. (v0.1.7)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.1.7)
