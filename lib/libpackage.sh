@@ -85,7 +85,6 @@ genmakepkgconf() {
         fi
 
         # Extract PACKAGER and MAKEFLAGS from the local makepkg.conf.
-        # TODO: Use something else?
         printf '# Local configs\n' > "${outfile}"
         localmakepkgconf | /usr/bin/grep -e '^PACKAGER=' -e '^MAKEFLAGS=' \
             >> "${outfile}"
