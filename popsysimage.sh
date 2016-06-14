@@ -16,6 +16,7 @@ populate_sysimage() {
     # Install the packages to the system image.
     local configdir="$1"
     local sysimage="$2"
+    local fs="$3"
     
     # Prepare the mountpoint.
     point="$(sudo mktemp -d "${TMPDIR:-/tmp}/mount.XXXX")" || \
@@ -30,9 +31,8 @@ populate_sysimage() {
         -U "${configdir}/pkgs"/*{"${config[arch]}",any}.pkg.tar.*
 
     # Add a basic fstab.
-    # TODO: If the fs is configurable, this will need adjusting.
     sudo tee "${point}/etc/fstab" > /dev/null << EOF
-/dev/sda / ext2 rw,relatime,noatime,data=ordered 0 1
+/dev/sda / ${fs} rw,relatime,noatime,data=ordered 0 1
 devtmpfs devtmpfs /dev
 procfs procfs /proc
 sysfs sysfs /sys
@@ -44,15 +44,17 @@ EOF
 }
 
 # Set the usage string.
-USAGE="<configdir> <image>"
+USAGE="<configdir> [--fs=<fs type>] <image>"
 # Parse the arguments.
 CONFIGDIR=""        # Config dir.
 SYSIMAGE=""         # Sysimage path.
+FS="ext2"           # Filesystem type.
 parseargs $@ # Initial argument parse.
 # Manual argument parse.
 for arg in $@; do
     ignore_arg "${arg}" || \
     case "${arg}" in
+        --fs=*) FS="${arg:5}";;
         *) if [ -z "${CONFIGDIR}" ]; then
             CONFIGDIR="${arg}"
         elif [ -z "${SYSIMAGE}" ]; then
@@ -67,4 +69,4 @@ if [ ! -f "${SYSIMAGE}" ]; then
     error 1 "'${SYSIMAGE}' is not a file!"
 fi
 
-populate_sysimage "${CONFIGDIR}" "${SYSIMAGE}"
+populate_sysimage "${CONFIGDIR}" "${SYSIMAGE}" "${FS}"
