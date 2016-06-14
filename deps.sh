@@ -87,7 +87,6 @@ main() {
             stack=(${stack[@]:0:$(expr ${#stack[@]} - 1)})
 
             # Print the target out.
-            # TODO: Make this print it nicely, ie with colour and pipe chars.
             if "${no_pretty}"; then
                 print_target "${configdir}" "${current}" "${depcount[@]}"
             else
