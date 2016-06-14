@@ -7,7 +7,7 @@
 
 # Initial setup.
 VERSION="0.1"
-USAGE="<config dir> [<target>]..."
+USAGE="<config dir> [--no-pretty] [<target>]..."
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 
@@ -16,32 +16,110 @@ print_target() {
     local configdir="$1"
     local target="$2"
     shift 2
-
-    for d in $(seq "$#"); do
+    for d in "$@"; do
         printf "  "
     done
+
     printf "%s\n" "${target}"
 }
+
+pprint_target() {
+    # Print the given target.
+    local configdir="$1"
+    local target="$2"
+    shift 2
+
+    local counter="$#"
+    for d in "$@"; do
+        # Decrement the counter.
+        counter="$(expr "${counter}" - 1)"
+        # Print the chars.
+        if [ "${counter}" -eq 0 ]; then
+            if [ "${d}" -eq 0 ]; then
+                # Last item; we print a '\'
+                printf "\\_ "
+            else
+                printf "|- "
+            fi
+        else
+            if [ "${d}" -eq 0 ]; then
+                # Blank (column ended earlier)
+                printf "   "
+            else
+                printf "|  "
+            fi
+        fi
+    done
+
+    tput bold
+    printf "%s\n" "${target}"
+    tput sgr0
+}
+
+count() { printf "$#"; }
 
 main() {
     # List the dependencies of the given targets.
     local configdir="$1"
-    shift
+    local no_pretty="$2"
+    shift 2
     local target_list="$(get_target_list "${configdir}" $@)"
-    # TODO: Use my own tree traversal code to fix it being up the wrong way,
-    #       not repeating targets, and without much in the way of visual cues
-    #       for how things join up.
-    walk "${CONFIGDIR}" "print_target" ${target_list} | tac
+
+    # Start by doing an initial walk of the graph to ensure that everything is
+    # setup properly.
+    walk "${CONFIGDIR}" "true" ${target_list}
+    # Check that nothing failed; if something did fail, we cannot proceed.
+    for state in ${targets}; do
+        if [ "${state}" != "rebuilt" ] && [ "${state}" != "good" ]; then
+            error 1 "Cannot proceed due to target in state '${state}'!"
+        fi
+    done
+
+    # We then do a 'dumb' depth first preorder search for each target.
+    for target in ${target_list}; do
+        # Run the search.
+        local stack=("${target}")
+        local depcount=() # Remaining dependencies left.
+        while [ "${#stack}" -gt 0 ]; do
+            # Pop an item off the top of the stack.
+            local current="${stack[-1]}"
+            stack=(${stack[@]:0:$(expr ${#stack[@]} - 1)})
+
+            # Print the target out.
+            # TODO: Make this print it nicely, ie with colour and pipe chars.
+            if "${no_pretty}"; then
+                print_target "${configdir}" "${current}" "${depcount[@]}"
+            else
+                pprint_target "${configdir}" "${current}" "${depcount[@]}"
+            fi
+
+            # Add the dependencies to the stack.
+            if [ -z "${graph["${current}"]+is_set}" ]; then
+                error 1 "BUG: target '${current}' is not in the graph!"
+            elif [ -n "${graph["${current}"]}" ]; then
+                stack+=(${graph["${current}"]})
+                depcount+=("$(count ${graph["${current}"]})")
+            fi
+
+            if [ "${depcount[-1]}" -lt 1 ]; then
+                # Last of the deps; go up a level.
+                depcount=(${depcount[@]:0:$(expr ${#depcount[@]} - 1)})
+            fi
+            depcount[-1]="$(expr "${depcount[-1]}" - 1)"
+        done
+    done
 }
 
 # Parse the arguments.
 CONFIGDIR="" # Set the initial config dir.
 TARGETS="" # The set of targets to investigate.
+NO_PRETTY="false" # Whether or not to use pipe characters.
 parseargs "$@" # Initial argument parse.
 # Manual argument parse.
 for arg in "$@"; do
     ignore_arg "${arg}" || \
     case "${arg}" in
+        --no-pretty) NO_PRETTY="true";;
         *) if [ "${CONFIGDIR}" == "" ]; then
             CONFIGDIR="${arg}"
         else
@@ -51,4 +129,4 @@ for arg in "$@"; do
 done
 setup "${CONFIGDIR}"
 
-main "${CONFIGDIR}" ${TARGETS}
+main "${CONFIGDIR}" "${NO_PRETTY}" ${TARGETS}
