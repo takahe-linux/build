@@ -10,6 +10,7 @@ VERSION="0.1"
 USAGE="<config dir>"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
+source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 
 main() {
     # Remove all the old, outdated packages and source tarballs.
@@ -27,7 +28,8 @@ main() {
         local pkgdir="$(printf "%s" "${dir}" | rev | cut -d'/' -f1-2 | rev)"
 
         # We need a .SRCINFO - generate it if it does not exist.
-        # TODO: Implement.
+        walk "${configdir}" "rebuild" "srcinfo/${pkgdir}" || \
+            error 1 "Failed to generate a .SRCINFO for '${pkgdir}'!"
         
         # Find the expected names; iterate through the existing srctars and
         # packages and remove all that match the package's name, but not the
