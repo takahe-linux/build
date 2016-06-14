@@ -101,10 +101,11 @@ main() {
                 depcount+=("$(count ${graph["${current}"]})")
             fi
 
-            if [ "${depcount[-1]}" -lt 1 ]; then
+            while [ "${depcount[-1]}" -lt 1 ] && \
+                [ "${#depcount[@]}" -gt 1 ]; do
                 # Last of the deps; go up a level.
                 depcount=(${depcount[@]:0:$(expr ${#depcount[@]} - 1)})
-            fi
+            done
             depcount[-1]="$(expr "${depcount[-1]}" - 1)"
         done
     done
