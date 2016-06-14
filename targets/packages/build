@@ -66,6 +66,7 @@ EOF
     fi
 
     # Create the build script.
+    # TODO: This includes a PATH fix that should be made more generic.
     cat > "${basedir}/build.sh" << EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
