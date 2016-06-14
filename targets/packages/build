@@ -13,7 +13,7 @@ path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
 # TODO: We should change the build directory if there will not be enough space
-#       on the given build dir, or something else should.
+#       on the given build dir, or something else should. (build profiling)
 basedir="${config[builddir]}/${target}"
 
 extractsrctar() {
@@ -70,6 +70,7 @@ EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
+export PATH="/opt/${config[triplet]}/bin:${PATH}"
 cd "pkg"
 PACMAN='${wrapper}' makepkg
 EOF
@@ -98,11 +99,8 @@ buildpackage() {
             error 2 "Build failed - see '${basedir}/build.log'!"
         fi
     else
-        # TODO: We appear to need this 'special' path for fakechroot chroots,
-        #       as fakechroot is not 100% reliable...
         # TODO: Find a better fakechroot alternative?
-        PATH="${basedir}/opt/${config[triplet]}/bin:${PATH}" \
-            fakechroot chroot "${basedir}" /build.sh || \
+        fakechroot chroot "${basedir}" /build.sh || \
             error "$?" "Running makepkg failed!"
     fi
 }
@@ -138,7 +136,7 @@ EOF
     chmod +x "${basedir}/run.sh"
 
     local tag="dev"
-    local mem=128 # TODO: How much RAM is enough?
+    local mem=128 # TODO: How much RAM is enough? (build profiling required)
 
     # Generate the script.
     message info "Writing qemu script"
@@ -308,10 +306,7 @@ installtooldeps() {
         fi
     done
     # We always install base-devel.
-    # TODO: This takes a while, and is dependent on the local pacman.conf.
-    #       What would be a better method?
-    #       Can I cache this (in a tarball, perhaps?) and extract it before
-    #       building anything? Would that be faster?
+    # TODO: Can I cache this instead? Is the RAM cost worth it?
     hostdeps+=('base-devel')
 
     message info "Installing toolchain packages to ${basedir}:"
