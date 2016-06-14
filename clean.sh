@@ -72,6 +72,6 @@ for arg in "$@"; do
         fi;;
     esac
 done
-check_configdir "${CONFIGDIR}"
+setup "${CONFIGDIR}"
 
 main "${CONFIGDIR}"

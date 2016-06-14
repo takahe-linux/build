@@ -41,6 +41,12 @@ main() {
     local configdir="$1"
     shift
     local target_list="$(get_target_list "${configdir}" "$@")"
+
+    # Start by cleaning the cache - otherwise we cannot check that it is not
+    # stale.
+    rm -rf "${config[builddir]}/cache"
+
+    # Walk the graph, print the summary.
     walk "${configdir}" "rebuild_target" ${target_list}
     summary
 }
@@ -60,7 +66,7 @@ for arg in "$@"; do
         fi;;
     esac
 done
-check_configdir "${CONFIGDIR}"
+setup "${CONFIGDIR}"
 
 main "${CONFIGDIR}" ${TARGETS}
 

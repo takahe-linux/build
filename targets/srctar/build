@@ -21,4 +21,6 @@ genmakepkgconf "${configdir}" "${name}" >> "${conf}"
 printf 'SRCPKGDEST="%s/srctar"\n' "${configdir}" >> "${conf}"
 # Make the source tarball.
 makepkg -f --allsource --config "${conf}"
+# Clean up and exit.
+rm -f "${path}/*.src.tar.*"
 exit "$?"

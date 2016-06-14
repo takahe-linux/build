@@ -59,8 +59,9 @@ message() {
     fi
 }
 
-check_configdir() {
-    # Check the configuration directory.
+setup() {
+    # Check the config directory, load the config file, and create the build 
+    # directory.
 
     local configdir="$@"
     local configfile="${configdir}/config"
@@ -68,7 +69,7 @@ check_configdir() {
     if [ "${configdir}" == "" ]; then
         error 1 "Config dir not given!"
     fi
-    for dir in build src pkgs srctar; do
+    for dir in build src pkgs srctar logs; do
         if [ ! -d "${configdir}/${dir}" ]; then
             error 1 "'${configdir}/${dir}' does not exist!"
         fi
@@ -85,6 +86,11 @@ check_configdir() {
     if [ -z "${config[arch_alias]}" ]; then
         config[arch_alias]="${config[arch]}"
     fi
+
+    # Set the build dir, and create the default directories.
+    config[builddir]="${TMPDIR:-/tmp}/builder-${config[id]}/"
+    mkdir -p "${config[builddir]}/logs/"
+    mkdir -p "${config[builddir]}/cache/"
 }
 
 ignore_arg() {

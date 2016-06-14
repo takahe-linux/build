@@ -4,9 +4,6 @@
 PKGEXT='.pkg.tar.xz'
 SRCEXT='.src.tar.gz'
 
-# Set a standard BUILDDIR, which can be overridden if required.
-BUILDDIR="${TMPDIR:-/tmp}"
-
 pkgdirsrctar() {
     # Print the source tarball path for the given package dir.
     local configdir="$1"
@@ -81,7 +78,7 @@ genmakepkgconf() {
     local configdir="$1"
     local pkgdir="${2%%/*}"
 
-    local outfile="${BUILDDIR}/builder-${config[id]}/cache/makepkgconf-${pkgdir}"
+    local outfile="${config[builddir]}/cache/makepkgconf-${pkgdir}"
     if [ ! -f "${outfile}" ]; then
         message debug "Generating makepkgconf for '${pkgdir}'..."
         if [ ! -d "${outfile%/*}" ]; then
@@ -119,8 +116,7 @@ BUILDDIR="%s"
 ' \
             "${config[arch]}" "${config[arch_alias]}" "${config[triplet]}" \
             "${config[cflags]}" "${config[cppflags]}" "${config[ldflags]}" \
-            "${PKGEXT}" "${SRCEXT}" \
-            "${BUILDDIR}/builder-${config[id]}" >> "${outfile}"
+            "${PKGEXT}" "${SRCEXT}" "${config[builddir]}" >> "${outfile}"
 
         # If a package config file exists, add it...
         local local_config="${configdir}/src/${pkgdir}/makepkg.conf"

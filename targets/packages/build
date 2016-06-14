@@ -12,9 +12,9 @@ source "$(dirname "$0")/../../lib/libpackage.sh"
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
-# TODO: We should change BUILDDIR if there will not be enough space on the
-#       given BUILDDIR, or something else should.
-basedir="${BUILDDIR}/builder-${config[id]}/${target}"
+# TODO: We should change the build directory if there will not be enough space
+#       on the given build dir, or something else should.
+basedir="${config[builddir]}/${target}"
 
 extractsrctar() {
     # Find and extract the source tarball.

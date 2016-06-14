@@ -353,9 +353,7 @@ rebuild() {
     fi
 
     # Rebuild; this is old.
-    # Create a temporary document for the build log.
-    local buildlog="$(mktemp "${TMPDIR:-/tmp}/build-$(echo "$1" \
-        | tr '/' '_')".XXXXXXXX)"
+    local buildlog="${config[builddir]}/logs/$(echo "$1" | tr '/' '_').log"
     run_action build "${configdir}" "$1" > "${buildlog}" 2>&1
     if [ "$?" -ne 0 ]; then
         message error "Last 10 lines of the build log (${buildlog}):"
@@ -368,7 +366,7 @@ rebuild() {
             message error "Built target '$1' is still 'old'!"
             targets["$1"]="fail"
         else
-            rm -f "${buildlog}"
+            mv "${buildlog}" "${configdir}/logs/"
             mark "${configdir}" "$1" || \
                 error "$?" "Invalid target '$1'!"
             targets["$1"]="rebuilt"

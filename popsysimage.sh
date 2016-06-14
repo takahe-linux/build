@@ -62,7 +62,7 @@ for arg in $@; do
         fi;;
     esac
 done
-check_configdir "${CONFIGDIR}"
+setup "${CONFIGDIR}"
 if [ ! -f "${SYSIMAGE}" ]; then
     error 1 "'${SYSIMAGE}' is not a file!"
 fi

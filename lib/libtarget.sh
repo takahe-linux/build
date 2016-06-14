@@ -3,7 +3,7 @@
 
 configdir="$(realpath "$1")"
 # Load the config; we assume that it has been loaded.
-check_configdir "${configdir}"
+setup "${configdir}"
 target="$2"
 shift 2
 
