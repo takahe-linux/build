@@ -169,8 +169,6 @@ walk() {
     local func="$2"
     shift 2
 
-    # We maintain a stack.
-    declare -a stack
     # We also note visited nodes.
     declare -A visited
     # We also keep track of "required" deps; they need to be built before
