@@ -24,8 +24,7 @@ pkgdirsrctar() {
 
 pkgdirpackages() {
     # Print the resulting filenames of the given packages.
-    # I did try using makepkg --packagelist, but it was *painfully* slow...
-    # TODO: Figure out how to use makepkg --packagelist.
+    # makepkg --packagelist is slow, so use the .SRCINFO instead.
     local configdir="$1"
     local pkgdir="$2"
 
