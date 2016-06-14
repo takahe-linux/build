@@ -4,12 +4,6 @@ source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 
 exists "${configdir}/src/${name}/PKGBUILD"
-if [ ! -f "${configdir}/src/${name}/.SRCINFO" ]; then
-    # Bail if the .SRCINFO does not exist at this time.
-    # TODO: This may be wrong - there may be an up-to-date tarball, but no
-    #       .SRCINFO. Is the build system smart enough to figure this out?
-    printf 'old'
-    exit 0
-fi
+exists "${configdir}/src/${name}/.SRCINFO"
 srctar="$(pkgdirsrctar "${configdir}" "${name}")" || exit "$?"
 sum_file "${configdir}/srctar/${srctar}" || exit "$?"

@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# We rely on the .SRCINFO file being created.
+
+printf "srcinfo/$2\n"
