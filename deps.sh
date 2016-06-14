@@ -52,17 +52,18 @@ pprint_target() {
     done
 
     tput bold
-    printf "%s\n" "${target}"
+    printf "%s/" "${target%%/*}"
+    tput setaf 2
+    printf "%s\n" "${target##*/}"
     tput sgr0
 }
-
-count() { printf "$#"; }
 
 main() {
     # List the dependencies of the given targets.
     local configdir="$1"
     local no_pretty="$2"
-    shift 2
+    local prefixes="$3"
+    shift 3
     local target_list="$(get_target_list "${configdir}" $@)"
 
     # Start by doing an initial walk of the graph to ensure that everything is
@@ -96,10 +97,27 @@ main() {
             # Add the dependencies to the stack.
             if [ -z "${graph["${current}"]+is_set}" ]; then
                 error 1 "BUG: target '${current}' is not in the graph!"
-            elif [ -n "${graph["${current}"]}" ]; then
-                stack+=(${graph["${current}"]})
-                depcount+=("$(count ${graph["${current}"]})")
             fi
+            local counter dep
+            counter=0
+            for dep in ${graph["${current}"]}; do
+                # Check if the dep is in prefixes or the list of prefixes
+                # is zero length (no restriction).
+                local depprefix="${dep%%/*}"
+                if [ -z "${prefixes}" ]; then
+                    stack+=("${dep}")
+                    counter="$(expr "${counter}" + 1)"
+                else
+                    for prefix in ${prefixes}; do
+                        if [ "${prefix}" == "${depprefix}" ]; then
+                            stack+=("${dep}")
+                            counter="$(expr "${counter}" + 1)"
+                            break
+                        fi
+                    done
+                fi
+            done
+            depcount+=("${counter}")
 
             while [ "${depcount[-1]}" -lt 1 ] && \
                 [ "${#depcount[@]}" -gt 1 ]; do
@@ -112,15 +130,17 @@ main() {
 }
 
 # Parse the arguments.
-CONFIGDIR="" # Set the initial config dir.
-TARGETS="" # The set of targets to investigate.
-NO_PRETTY="false" # Whether or not to use pipe characters.
+CONFIGDIR=""        # Set the initial config dir.
+TARGETS=""          # The set of targets to investigate.
+NO_PRETTY="false"   # Whether or not to use pipe characters.
+PREFIXES=""         # Dep types to include.
 parseargs "$@" # Initial argument parse.
 # Manual argument parse.
 for arg in "$@"; do
     ignore_arg "${arg}" || \
     case "${arg}" in
         --no-pretty) NO_PRETTY="true";;
+        --prefix=*) PREFIXES+=" ${arg:9}";;
         *) if [ "${CONFIGDIR}" == "" ]; then
             CONFIGDIR="${arg}"
         else
@@ -130,4 +150,4 @@ for arg in "$@"; do
 done
 setup "${CONFIGDIR}"
 
-main "${CONFIGDIR}" "${NO_PRETTY}" ${TARGETS}
+main "${CONFIGDIR}" "${NO_PRETTY}" "${PREFIXES}" ${TARGETS}
