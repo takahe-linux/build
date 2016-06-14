@@ -7,9 +7,6 @@
 
 set -u -e
 
-# TODO: Make the choice of fs type configurable.
-MKFS="mkfs.ext2"
-
 # Initial setup.
 VERSION="0.1"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
@@ -18,6 +15,7 @@ create_sysimage() {
     # Create the sysimage.
     local path="$1"
     local size="$2"
+    local mkfs="$3"
 
     if [ -e "${path}" ]; then
         error 2 "'${path}' already exists!"
@@ -29,20 +27,22 @@ create_sysimage() {
 
     qemu-img create -f raw "${path}" "${size}M" || \
         error 1 "Failed to create the image on '${path}'!"
-    "${MKFS}" "${path}" || \
+    "${mkfs}" "${path}" || \
         error 1 "Failed to create a filesystem on '${path}'!"
 }
 
 # Set the usage string.
-USAGE="<image> [size, in MB]"
+USAGE="<image> [-fs=<fs>] [size, in MB]"
 # Parse the arguments.
 SYSIMAGE=""         # Sysimage path.
 SYSIMAGE_SIZE=""    # Sysimage size.
+FS="ext2"           # Filesystem type.
 parseargs $@ # Initial argument parse.
 # Manual argument parse.
 for arg in $@; do
     ignore_arg "${arg}" || \
     case "${arg}" in
+        --fs=*) FS="${arg:5}";;
         *) if [ -z "${SYSIMAGE}" ]; then
             SYSIMAGE="${arg}"
         elif [ -z "${SYSIMAGE_SIZE}" ]; then
@@ -53,4 +53,4 @@ for arg in $@; do
     esac
 done
 
-create_sysimage "${SYSIMAGE}" "${SYSIMAGE_SIZE:-600}"
+create_sysimage "${SYSIMAGE}" "${SYSIMAGE_SIZE:-600}" "mkfs.${FS}"
