@@ -78,7 +78,7 @@ setup() {
     # Check the config file.
     load_config "${configfile}"
     for key in id arch triplet cflags cppflags ldflags qemu-flags; do
-        if [ -z "${config["${key}"]}" ]; then
+        if [ -z "${config["${key}"]+is_set}" ]; then
             error 2 "'${key}' is not defined in '${configfile}'!"
         fi
     done
