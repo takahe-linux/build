@@ -83,7 +83,7 @@ setup() {
         fi
     done
     # Fallback to the value of arch if arch_alias is not given.
-    if [ -z "${config[arch_alias]}" ]; then
+    if [ -z "${config[arch_alias]+is_set}" ]; then
         config[arch_alias]="${config[arch]}"
     fi
 
