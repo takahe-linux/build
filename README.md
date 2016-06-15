@@ -41,8 +41,6 @@ Things that have regressed:
 
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling. (v0.1.7)
-- The config files contain information that the build system should provide,
-  for instance --sysroot=/sysroot in cflags.
 
 # Usage #
 
