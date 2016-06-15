@@ -410,3 +410,28 @@ installnativedeps() {
         -U $(mappkgs "${configdir}" "$@")
 }
 
+printallpkgs() {
+    # Print all of the generated packages from the given package dirs.
+    # We assume that the .SRCINFO exists corresponding to the given package.
+    local configdir="$1"
+    shift
+
+    local dir path name generated pkg
+    for dir in "$@"; do
+        for path in "${configdir}/src/${dir}"/*; do
+            if [ -d "${path}" ] && [ -f "${path}/.SRCINFO" ]; then
+                name="$(printf '%s' "${path}" | rev | cut -d'/' -f1-2 | rev)"
+                generated="$(pkgdirpackages "${configdir}" "${name}")" || \
+                    error 1 "Failed to generate the pkg list for '${name}'!"
+                for pkg in ${generated}; do
+                    if [ -e "${configdir}/pkgs/${pkg}" ]; then
+                        printf "%s/pkgs/%s\n" "${configdir}" "${pkg}"
+                    else
+                        message warn "Could not find package file '${pkg}'!"
+                    fi
+                done
+            fi
+        done
+    done
+}
+

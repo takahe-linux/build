@@ -27,8 +27,8 @@ populate_sysimage() {
     cleanup="sudo umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
     sudo mkdir -p "${point}/var/lib/pacman"
     # Install the packages.
-    sudo pacman --arch "${config[arch]}" --root "${point}" \
-        -U "${configdir}/pkgs"/*{"${config[arch]}",any}.pkg.tar.*
+    callpacman "${point}" --needed --arch "${config[arch]}" \
+        -U $(printallpkgs "${configdir}" packages native)
 
     # Add a basic fstab.
     sudo tee "${point}/etc/fstab" > /dev/null << EOF

@@ -23,7 +23,7 @@ root_own() {
 main() {
     # Generate the fs and boot.
     # TODO: This duplicates a lot; clean up!
-    # TODO: Merge with mksysimage.
+    # TODO: Merge with popsysimage.
     local configdir="$1"
     shift
 
@@ -31,27 +31,8 @@ main() {
     mkdir -p "${fs}/var/lib/pacman"
 
     # Generate the list of packages and install them.
-    message info "Finding packages..."
-    local pkgs=()
-    local dir name generate pkg
-    for dir in "${configdir}/src/packages"/* "${configdir}/src/native"/*; do
-        name="$(printf '%s' "${dir}" | rev | cut -d'/' -f1-2 | rev)"
-        if [ -d "${dir}" ] && [ -f "${dir}/.SRCINFO" ]; then
-            generate="$(pkgdirpackages "${configdir}" "${name}")" || \
-                error 1 "Failed to generate the packages for '${name}'!"
-            for pkg in ${generate}; do
-                if [ -e "${configdir}/pkgs/${pkg}" ]; then
-                    pkgs+=("${configdir}/pkgs/${pkg}")
-                else
-                    message warn "Could not find package file '${pkg}'!"
-                fi
-            done
-        fi
-    done
-
-    message info "Installing packages: ${pkgs[@]}"
-    sudo pacman --arch "${config[arch]}" --root "${fs}" --needed --noconfirm \
-        -U ${pkgs[@]}
+    callpacman "${fs}" --needed --arch "${config[arch]}" \
+        -U $(printallpkgs "${configdir}" packages native)
 
     # Add a basic fstab.
     local file="etc/fstab"
