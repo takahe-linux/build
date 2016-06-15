@@ -101,8 +101,6 @@ _target_cflags="%s"
 _target_cppflags="%s"
 _target_ldflags="%s"
 
-_toolroot="/opt/${_target_triplet}"
-
 # We standardise PKGEXT.
 PKGEXT="%s"
 SRCEXT="%s"

@@ -11,6 +11,7 @@ set -e -u
 VERSION="0.1"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
+source "$(dirname "$(realpath "$0")")/lib/libboot.sh"
 
 populate_sysimage() {
     # Install the packages to the system image.
@@ -30,17 +31,9 @@ populate_sysimage() {
     callpacman "${point}" --needed --arch "${config[arch]}" \
         -U $(printallpkgs "${configdir}" packages native)
 
-    # Add a basic fstab.
-    sudo tee "${point}/etc/fstab" > /dev/null << EOF
-/dev/sda / ${fs} rw,relatime,noatime,data=ordered 0 1
-devtmpfs devtmpfs /dev
-procfs procfs /proc
-sysfs sysfs /sys
-tmpfs tmpfs /tmp
-EOF
-    
-    # Add the hostname.
-    echo 'qemu' | sudo tee "${point}/etc/hostname" > /dev/null
+    # Add the initial scripts.
+    genfstab "${fs}"
+    gendefhostname "${fs}"
 }
 
 # Set the usage string.

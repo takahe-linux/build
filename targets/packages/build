@@ -8,6 +8,7 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
+source "$(dirname "$0")/../../lib/libboot.sh"
 
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
@@ -36,91 +37,28 @@ extractsrctar() {
     popd > /dev/null
 }
 
-genconfigfiles() {
-    # Generate the config files.
-    local configdir="$1"
-    local target="$2"
-    local basedir="$3"
-
-    # Generate the makepkg config file.
-    genmakepkgconf "${configdir}" "${target}" >> "${basedir}/etc/makepkg.conf"
-    printf "unset BUILDDIR" >> "${basedir}/etc/makepkg.conf"
-
-    # Add the pacman config file.
-    cat > "${basedir}/etc/pacman.conf" << EOF
-EOF
-
-    # Create the pacman wrapper.
-    local wrapper="/usr/bin/pacman"
-    if [ "${target%%/*}" == "packages" ]; then
-        # TODO: Make this more generic?
-        # We need this when cross compiling; makepkg doesn't know where it
-        # should look, so the dependency checks fail.
-        wrapper="/usr/bin/sysroot-pacman"
-        cat > "${basedir}${wrapper}" << EOF
-#!/usr/bin/sh
-# Wrapper for pacman; use the correct system root.
-pacman --root /sysroot "\$@"
-EOF
-        chmod +x "${basedir}/${wrapper}"
-    fi
-
-    # Create the build script.
-    # TODO: This includes a PATH fix that should be made more generic.
-    cat > "${basedir}/build.sh" << EOF
-#!/usr/bin/bash
-# Automatically generated build script - do not modify!
-set -e
-export PATH="/opt/${config[triplet]}/bin:${PATH}"
-cd "pkg"
-PACMAN='${wrapper}' makepkg
-EOF
-    chmod +x "${basedir}/build.sh"
-}
-
 buildpackage() {
     # Build the package.
-    local basedir="$1"
-    local prefix="$2"
+    local configdir="$1"
+    local basedir="$2"
+    local prefix="$3"
 
     message info "Building the package..."
 
     if [ "${prefix}" == "native" ]; then
         # Native packages are different; we currently just use QEMU.
 
-        # Try with KVM first, then fall back on non-kvm.
-        qemupackage "${basedir}" -enable-kvm || \
-        qemupackage "${basedir}" || \
-            error "$?" "Running qemu failed!"
+        # Generate the fstab and default hostname.
+        genfstab "${basedir}"
+        gendefhostname "${basedir}"
 
-        # Check that everything worked.
-        if [ ! -f "${basedir}/build.log" ]; then
-            error 1 "QEMU did not boot; no log at '${basedir}/build.log!'"
-        elif [ "$(tail -n 1 "${basedir}/build.log")" != "Success!" ]; then
-            error 2 "Build failed - see '${basedir}/build.log'!"
-        fi
-    else
-        # TODO: Find a better fakechroot alternative?
-        fakechroot chroot "${basedir}" /build.sh || \
-            error "$?" "Running makepkg failed!"
-    fi
-}
-
-qemupackage() {
-    # Run QEMU to build the package.
-    local basedir="$1"
-    shift
-
-    # TODO: Remove build fixes; these should be fixed elsewhere.
-    mkdir -p "${basedir}/etc/init/"
-    cat > "${basedir}/etc/init/init" << EOF
+        # Generate the init scripts.
+        geninitscript "${basedir}" "/etc/init/run.sh"
+        # TODO: Remove build fixes; these should be fixed elsewhere.
+        cat > "${basedir}/etc/init/run.sh" << EOF
 #!/usr/bin/sh
 
-mount -t proc proc /proc
-mount -t sysfs sys /sys
-
 # Misc fixes.
-ln -s /proc/self/fd /dev/fd
 chmod +s /usr/bin/busybox
 sed -i /usr/bin/makepkg -e 's:--apparent-size::'
 
@@ -132,39 +70,69 @@ chmod g+ws /pkg
 rm -rf /pkg/{src,pkg}
 
 # Run the build script as 'nobody'.
-su nobody -s /usr/bin/sh -c /build.sh > /build.log && \
+cd /pkg && \
+    su nobody -s /usr/bin/sh -c makepkg > /build.log && \
     echo 'Success!' >> build.log
-
-# Poweroff.
-poweroff -f
 EOF
-    chmod +x "${basedir}/etc/init/init"
+        chmod +x "${basedir}/etc/init/run.sh"
 
-    local tag="dev"
-    local mem=128 # TODO: How much RAM is enough? (build profiling required)
+        # Generate the qemu script.
+        # TODO: How much RAM is enough? (build profiling required)
+        genqemuscript "${basedir}" 128
 
-    # Generate the script.
-    message info "Writing qemu script"
-    rm -f "${basedir}/qemu.sh"
-    cat > "${basedir}/qemu.sh" << EOF
+        # Try with KVM first, then fall back on non-kvm.
+        "${basedir}/qemu.sh" -enable-kvm || \
+        "${basedir}/qemu.sh" || \
+            error "$?" "Running qemu failed!"
+
+        # Check that everything worked.
+        if [ ! -f "${basedir}/build.log" ]; then
+            error 1 "QEMU did not boot; no log at '${basedir}/build.log!'"
+        elif [ "$(tail -n 1 "${basedir}/build.log")" != "Success!" ]; then
+            error 2 "Build failed - see '${basedir}/build.log'!"
+        fi
+    else
+        # For cross-compiled packages, we override the defaults.
+
+        # Generate the makepkg config file.
+        genmakepkgconf "${configdir}" "${target}" >> \
+            "${basedir}/etc/makepkg.conf"
+        printf "unset BUILDDIR" >> "${basedir}/etc/makepkg.conf"
+
+        # Empty the pacman config file.
+        cat > "${basedir}/etc/pacman.conf" << EOF
+EOF
+
+        # Create the pacman wrapper.
+        local wrapper="/usr/bin/pacman"
+        if [ "${target%%/*}" == "packages" ]; then
+            # TODO: Make this more generic? (dir info)
+            # We need this when cross compiling; makepkg doesn't know where it
+            # should look, so the dependency checks fail.
+            wrapper="/usr/bin/sysroot-pacman"
+            cat > "${basedir}${wrapper}" << EOF
 #!/usr/bin/sh
-fakeroot "qemu-system-${config[arch_alias]}" "\$@" \
-    -kernel "${basedir}/boot/vmlinuz" \
-    -append "console=ttyS0 init=/usr/bin/sinit panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
-    -fsdev local,id=${tag},security_model=none,path=${basedir} \
-    -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
-    -m "${mem}" \
-    -no-reboot -nographic
-exit "\$?"
+# Wrapper for pacman; use the correct system root.
+pacman --root /sysroot "\$@"
 EOF
-    chmod +x "${basedir}/qemu.sh"
-    
-    # Run qemu and exit.
-    message debug "Running qemu with extra args '$@'"
-    "${basedir}/qemu.sh" "$@"
-    return "$?"
-}
+            chmod +x "${basedir}/${wrapper}"
+        fi
 
+        # Create the build script.
+        cat > "${basedir}/build.sh" << EOF
+#!/usr/bin/bash
+# Automatically generated build script - do not modify!
+set -e
+cd "pkg"
+PACMAN='${wrapper}' makepkg
+EOF
+        chmod +x "${basedir}/build.sh"
+
+        # TODO: Find a better fakechroot alternative?
+        fakechroot chroot "${basedir}" /build.sh || \
+            error "$?" "Running makepkg failed!"
+    fi
+}
 
 # Prepare the sysroot.
 # Create the base dir.
@@ -178,12 +146,9 @@ installdeps "${configdir}" "${target}" "${basedir}"
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
 extractsrctar "${configdir}" "${target}" "${basedir}"
-# Generate the config files.
-message info "Generating the config files..."
-genconfigfiles "${configdir}" "${target}" "${basedir}"
 
 # Build the package.
-buildpackage "${basedir}" "${prefix}"
+buildpackage "${configdir}" "${basedir}" "${prefix}"
 
 # Copy the built packages into the pkg dir.
 cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/" || \
