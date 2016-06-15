@@ -112,7 +112,8 @@ qemupackage() {
     shift
 
     # TODO: Remove build fixes; these should be fixed elsewhere.
-    cat > "${basedir}/run.sh" << EOF
+    mkdir -p "${basedir}/etc/init/"
+    cat > "${basedir}/etc/init/init" << EOF
 #!/usr/bin/sh
 
 mount -t proc proc /proc
@@ -133,8 +134,11 @@ rm -rf /pkg/{src,pkg}
 # Run the build script as 'nobody'.
 su nobody -s /usr/bin/sh -c /build.sh > /build.log && \
     echo 'Success!' >> build.log
+
+# Poweroff.
+poweroff -f
 EOF
-    chmod +x "${basedir}/run.sh"
+    chmod +x "${basedir}/etc/init/init"
 
     local tag="dev"
     local mem=128 # TODO: How much RAM is enough? (build profiling required)
@@ -144,13 +148,10 @@ EOF
     rm -f "${basedir}/qemu.sh"
     cat > "${basedir}/qemu.sh" << EOF
 #!/usr/bin/sh
-init="\$1"
-shift
-
 fakeroot "qemu-system-${config[arch_alias]}" "\$@" \
     -kernel "${basedir}/boot/vmlinuz" \
-    -append "console=ttyS0 init=\${init} panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
-    -fsdev local,id=${tag},security_model=passthrough,path=${basedir} \
+    -append "console=ttyS0 init=/usr/bin/sinit panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
+    -fsdev local,id=${tag},security_model=none,path=${basedir} \
     -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
     -m "${mem}" \
     -no-reboot -nographic
@@ -159,8 +160,8 @@ EOF
     chmod +x "${basedir}/qemu.sh"
     
     # Run qemu and exit.
-    message info "Running qemu with extra args '$@'"
-    "${basedir}/qemu.sh" "/run.sh" "$@"
+    message debug "Running qemu with extra args '$@'"
+    "${basedir}/qemu.sh" "$@"
     return "$?"
 }
 
