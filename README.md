@@ -39,8 +39,6 @@ Things that the new system does not fix (yet):
 
 Things that have regressed:
 
-- I no longer have a test script (run\_test.sh) for starting a QEMU VM with the
-  current image. (v0.1.6)
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. Requires build profiling. (v0.1.7)
 - The config files contain information that the build system should provide,
