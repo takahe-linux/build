@@ -85,10 +85,9 @@ EOF
             error "$?" "Running qemu failed!"
 
         # Check that everything worked.
-        if [ ! -f "${basedir}/build.log" ]; then
-            error 1 "QEMU did not boot; no log at '${basedir}/build.log!'"
-        elif [ "$(tail -n 1 "${basedir}/build.log")" != "Success!" ]; then
-            error 2 "Build failed - see '${basedir}/build.log'!"
+        if [ ! -f "${basedir}/build.log" ] || \
+            [ "$(tail -n 1 "${basedir}/build.log")" != "Success!" ]; then
+            error 2 "Build failed! (no success marker)"
         fi
     else
         # For cross-compiled packages, we override the defaults.
