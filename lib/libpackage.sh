@@ -52,6 +52,11 @@ pkgdirpackages() {
     else
         carch="any"
     fi
+    # We special case PKGEXT for native.
+    # TODO: Remove special case (pkg dir info)
+    if [ "${pkgdir%%/*}" == "native" ]; then
+        PKGEXT=".pkg.tar.gz"
+    fi
     for pkgname in ${pkgnames}; do
         printf "%s-%s-%s-%s%s\n" "${pkgname}" "${pkgver}" "${pkgrel}" \
             "${carch}" "${PKGEXT}"
