@@ -40,16 +40,17 @@ pkgdirpackages() {
     local pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     local arch="$(sed -n "${srcinfo}" -e '/arch = /p' | sed -e 's:.*= ::')"
 
-    # Set the CARCH variable to the current architecture.
-    local CARCH="$(uname -m)"
-    # Set some other expected variables from the config.
-    . <(genmakepkgconf "${configdir}" "${pkgdir}") || \
-        error 1 "Failed to generate a temporary config file!"
-
+    # Set the arch as required.
+    local carch
     if [ "${arch}" != "any" ]; then
-        local carch="${CARCH}"
+        # TODO: Make this more generic (pkgdir configs)
+        if [ "${pkgdir%%/*}" == "toolchain" ]; then
+            carch="$(uname -m)"
+        else
+            carch="${config[arch]}"
+        fi
     else
-        local carch="any"
+        carch="any"
     fi
     for pkgname in ${pkgnames}; do
         printf "%s-%s-%s-%s%s\n" "${pkgname}" "${pkgver}" "${pkgrel}" \
