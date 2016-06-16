@@ -72,7 +72,7 @@ rm -rf /pkg/{src,pkg}
 # Run the build script as 'nobody'.
 cd /pkg && \
     su nobody -s /usr/bin/sh -c '/usr/bin/bash -l makepkg' && \
-    echo 'Success!' | tee /build.log
+    echo 'Success!' > /build.log
 EOF
         chmod +x "${basedir}/etc/init/run.sh"
 
