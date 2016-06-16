@@ -13,9 +13,8 @@ source "$(dirname "$0")/../../lib/libboot.sh"
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"
 
-# TODO: We should change the build directory if there will not be enough space
-#       on the given build dir, or something else should. (build profiling)
-basedir="${config[builddir]}/${target}"
+# TODO: Automatically pick a dir with enough space (#profile)
+basedir="${config[builddir]}/${target}" 
 
 extractsrctar() {
     # Find and extract the source tarball.
@@ -77,7 +76,7 @@ EOF
         chmod +x "${basedir}/etc/init/run.sh"
 
         # Generate the qemu script.
-        # TODO: How much RAM is enough? (build profiling required)
+        # TODO: How much RAM is enough? (#profile)
         genqemuscript "${basedir}" 128
 
         # Try with KVM first, then fall back on non-kvm.
@@ -106,7 +105,7 @@ EOF
         # Create the pacman wrapper.
         local wrapper="/usr/bin/pacman"
         if [ "${target%%/*}" == "packages" ]; then
-            # TODO: Make this more generic? (dir info)
+            # TODO: Make this more generic? (#pkgdir)
             # We need this when cross compiling; makepkg doesn't know where it
             # should look, so the dependency checks fail.
             wrapper="/usr/bin/sysroot-pacman"

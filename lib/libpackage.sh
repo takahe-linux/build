@@ -43,7 +43,7 @@ pkgdirpackages() {
     # Set the arch as required.
     local carch
     if [ "${arch}" != "any" ]; then
-        # TODO: Make this more generic (pkgdir configs)
+        # TODO: Make this more generic (#pkgdir)
         if [ "${pkgdir%%/*}" == "toolchain" ]; then
             carch="$(uname -m)"
         else
@@ -53,7 +53,7 @@ pkgdirpackages() {
         carch="any"
     fi
     # We special case PKGEXT for native.
-    # TODO: Remove special case (pkg dir info)
+    # TODO: Remove special case (#pkgdir)
     if [ "${pkgdir%%/*}" == "native" ]; then
         PKGEXT=".pkg.tar.gz"
     fi
