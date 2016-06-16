@@ -15,4 +15,6 @@ else
 fi
 
 exists "${path}" || exit "$?"
-sum_file "${path}" || exit "$?"
+# We sum the file, minus blank lines and comments.
+# This prevents excessive rebuilds.
+sed -n -e 's:#.*::' -e '/^..*$/p' < "${path}" | md5sum | cut -d' ' -f1

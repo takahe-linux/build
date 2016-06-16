@@ -24,7 +24,6 @@ Things that the new system does not fix (yet):
 
 - No signal handling. (v0.1.6)
 - No support for test scripts. (v0.1.6)
-- Trivial (comments, whitespace, etc) fixes still cause rebuilds. (v0.1.6)
 - Package directories should not be identified by name, but by a file which
   contains the required information. (v0.1.7) (#pkgdir)
 - No "check for updates" script support. (v0.1.7)
