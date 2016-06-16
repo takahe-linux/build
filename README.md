@@ -48,4 +48,6 @@ To generate/update the packages:
  ./rebuild.sh _configdir_
 
 To build an image suitable for using in QEMU, see mksysimage and popsysimage.
+To create a fs and boot it in QEMU using the supplied kernel:
+ ./boot.sh _configdir_
 
