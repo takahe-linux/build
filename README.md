@@ -27,12 +27,11 @@ Things that the new system does not fix (yet):
 - Trivial (comments, whitespace, etc) fixes still cause rebuilds. (v0.1.6)
 - Package directories should not be identified by name, but by a file which
   contains the required information. (v0.1.7)
-- No build profiling (used disk space, memory, etc). (v0.1.7)
 - No "check for updates" script support. (v0.1.7)
-- Asynchronous and networked builds. (v0.1.7)
+- No build profiling (used disk space, memory, etc). (v0.1.8)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
-  builds). (v0.1.7)
-- No build profiling (used disk space, etc). (v0.1.7)
+  builds). (v0.1.8)
+- Asynchronous and networked builds. (v0.1.8)
 - No cross-compile support in makepkg (via libmakepkg?). (v0.3.0)
 - A new "branch" for something still requires a complete rebuild, or "dirtying"
   some shared branch. (v???)
@@ -40,7 +39,7 @@ Things that the new system does not fix (yet):
 Things that have regressed:
 
 - Requires *even more* RAM, due to the chroot location, which is not currently
-  configurable. Requires build profiling. (v0.1.7)
+  configurable. Requires build profiling. (v0.1.8)
 
 # Usage #
 
