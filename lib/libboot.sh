@@ -18,6 +18,7 @@ proc        proc    /proc
 sysfs       sys     /sys
 tmpfs       tmp     /tmp
 EOF
+    root_own "${mount}" "${file}"
 }
 
 geninitscript() {
