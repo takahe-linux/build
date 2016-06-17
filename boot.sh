@@ -19,7 +19,7 @@ main() {
     local configdir="$1"
     shift
 
-    fs="${config[builddir]}/fs"
+    local fs="${config[builddir]}/fs"
     mkdir -p "${fs}/var/lib/pacman"
 
     # Generate the list of packages and install them.
@@ -29,7 +29,7 @@ main() {
     # Add the initial scripts.
     gendefhostname "${fs}"
     genfstab "${fs}"
-    geninitscript "${fs}" "/usr/bin/bash -l"
+    geninitscript "${fs}" "/usr/bin/getty -l /usr/bin/login 0 /dev/console"
 
     # Run qemu and exit.
     genqemuscript "${fs}"
