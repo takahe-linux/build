@@ -23,5 +23,5 @@ printf 'SRCPKGDEST="%s/srctar"\n' "${configdir}" >> "${conf}"
 makepkg -f --allsource --config "${conf}" || \
     error 1 "Failed to generate the source tarball!"
 # Clean up and exit.
-rm -f "${path}/*.src.tar.*"
+rm -f "${path}"/*.src.tar.*
 exit "$?"
