@@ -121,13 +121,16 @@ EOF
 #!/usr/bin/bash
 # Automatically generated build script - do not modify!
 set -e
-cd "pkg"
+cd "/pkg"
 PACMAN='${wrapper}' makepkg
 EOF
         chmod +x "${basedir}/build.sh"
 
+        # TODO: We need the path, otherwise depcomp fails in the gcc build
+        #       (only for some architectures, though!)
         # TODO: Find a better fakechroot alternative?
-        fakechroot chroot "${basedir}" /build.sh || \
+        PATH="${basedir}/opt/${config[triplet]}/bin:/usr/bin" \
+            fakechroot chroot "${basedir}" /build.sh || \
             error "$?" "Running makepkg failed!"
     fi
 }
