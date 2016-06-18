@@ -22,7 +22,6 @@ Unfortunately, that script had a few... issues:
 
 Things that the new system does not fix (yet):
 
-- No support for test scripts. (v0.1.6)
 - Package directories should not be identified by name, but by a file which
   contains the required information. (v0.1.7) (#pkgdir)
 - No "check for updates" script support. (v0.1.7)
