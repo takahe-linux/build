@@ -19,7 +19,8 @@ pkgdirsrctar() {
     pkgver="$(sed -n "${srcinfo}" -e '/pkgver = /p' | sed -e 's:.*= ::')"
     pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     
-    printf "%s-%s-%s%s" "${pkgbase}" "${pkgver}" "${pkgrel}" "${SRCEXT}"
+    printf "%s/srctar/%s/%s-%s-%s%s" "${configdir}" "${pkgdir%%/*}" \
+        "${pkgbase}" "${pkgver}" "${pkgrel}" "${SRCEXT}"
 }
 
 pkgdirpackages() {

@@ -29,8 +29,8 @@ extractsrctar() {
 
     # Extract the source tarball.
     pushd "${outdir}" > /dev/null
-    bsdtar -xf "${configdir}/srctar/${srctar}" || \
-        error 1 "Failed to extract '${configdir}/srctar/${srctar}' to $(pwd)!"
+    bsdtar -xf "${srctar}" || \
+        error 1 "Failed to extract '${srctar}' to $(pwd)!"
     # Move the source tarball to a more standard location.
     mv "$(printf "%s" "${srctar}" | rev | cut -d'-' -f3- | rev)" "pkg"
     popd > /dev/null
