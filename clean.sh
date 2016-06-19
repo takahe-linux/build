@@ -22,6 +22,7 @@ remove_pkg() {
 
 main() {
     # Remove all the old, outdated packages and source tarballs.
+    # TODO: Also clean source tarballs!
     local configdir="$1"
     local dry_run="$2"
 
