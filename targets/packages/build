@@ -32,7 +32,7 @@ extractsrctar() {
     bsdtar -xf "${srctar}" || \
         error 1 "Failed to extract '${srctar}' to $(pwd)!"
     # Move the source tarball to a more standard location.
-    mv "$(printf "%s" "${srctar}" | rev | cut -d'-' -f3- | rev)" "pkg"
+    mv "$(printf "%s" "${srctar##*/}" | rev | cut -d'-' -f3- | rev)" "pkg"
     popd > /dev/null
 }
 
@@ -143,7 +143,8 @@ fi
 mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 # Populate the sysroot.
 message info "Populating the sysroot..."
-installdeps "${configdir}" "${target}" "${basedir}"
+installdeps "${configdir}" "${target}" "${basedir}" \
+    "$(dirname "$0")/../../scripts/lsdeps.sh"
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
 extractsrctar "${configdir}" "${target}" "${basedir}"

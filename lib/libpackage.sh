@@ -10,16 +10,17 @@ pkgdirsrctar() {
     local pkgdir="$2"
     
     # Bail if there is no .SRCINFO
-    srcinfo="${configdir}/src/${pkgdir}/.SRCINFO"
+    local srcinfo="${configdir}/src/${pkgdir}/.SRCINFO"
     if [ ! -f "${srcinfo}" ]; then
         exit 2
     fi
     # Extract the pkgbase/version/rel
+    local pkgbase pkgver pkgrel
     pkgbase="$(sed -n "${srcinfo}" -e '/^pkgbase = /p' | sed -e 's:.*= ::')"
     pkgver="$(sed -n "${srcinfo}" -e '/pkgver = /p' | sed -e 's:.*= ::')"
     pkgrel="$(sed -n "${srcinfo}" -e '/pkgrel = /p' | sed -e 's:.*= ::')"
     
-    printf "%s/srctar/%s/%s-%s-%s%s" "${configdir}" "${pkgdir%%/*}" \
+    printf "%s/srctar/%s/%s-%s-%s%s" "${configdir}" "${pkgdir%/*}" \
         "${pkgbase}" "${pkgver}" "${pkgrel}" "${SRCEXT}"
 }
 
@@ -201,7 +202,7 @@ checkprov() {
     # Fail if there are too many providers.
     dep="$1"
     shift
-    if [ "$(printf "%s\n" "$@" | wc -l)" -gt 1 ]; then
+    if [ "$(printf "%s\n" "$@" | tr ' ' '\n' | wc -l)" -gt 1 ]; then
         error 1 "Too many providers found for '${dep}': $@"
     elif [ -z "$1" ]; then
         error 1 "No providers found for '${dep}'!"
@@ -212,6 +213,7 @@ installdeps() {
     local configdir="$1"
     local target="$2"
     local basedir="$3"
+    local lsdeps="$4"
 
     # Keep track of the dependencies corresponding to the various dirs.
     local tooldepends crossdepends nativedepends
@@ -228,7 +230,7 @@ installdeps() {
     # We cannot just put the target on the stack, as it has a different
     # dependency generation script, and should not end up in *depends.
     local deps
-    deps="$("$(dirname "$0")/../../scripts/lsdeps.sh" \
+    deps="$("${lsdeps}" \
         <(genmakepkgconf "${configdir}" "${target}") \
         "${configdir}/src/${target}/PKGBUILD")" || \
         error 1 "Failed to extract the deps from the PKGBUILD!"
