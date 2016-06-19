@@ -11,7 +11,7 @@ for pkg in "${configdir}/src"/*/*; do
     if [ -d "${pkg}" ] && [ -f "${pkg}/.SRCINFO" ]; then
         while IFS="= $(printf '\t\n')" read key value; do
             if [ "${key}" == 'pkgname' ] || [ "${key}" == 'provides' ]; then
-                providers["${value}"]="${dir}"
+                providers["${value}"]+="${dir} "
             fi
         done < "${pkg}/.SRCINFO"
     fi
