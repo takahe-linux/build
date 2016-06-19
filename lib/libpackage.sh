@@ -144,7 +144,7 @@ findpkgdir() {
                 if [ "${provdir}" == "${dir}" ]; then
                     printf "%s/%s\n" "${provdir}" "${provider}"
                 fi
-            done < <(printf "${providers}\n")
+            done < <(printf "%s" "${providers}" | tr ' ' '\n')
         fi
     done < "${configdir}/pkglist"
 }
