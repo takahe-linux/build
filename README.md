@@ -25,6 +25,13 @@ Things that the new system does not fix (yet):
 - Package directories should not be identified by name, but by a file which
   contains the required information. (v0.1.7) (#pkgdir)
 - No "check for updates" script support. (v0.1.7)
+- We don't support groups. (v0.1.7)
+- We currently rebuild *all* native packages if a cross compiled package
+  changes. In reality, this is excessive; rebuilding packages because the kernel
+  is updated is a waste of resources, and we should be able to avoid some other
+  rebuilds (eg if pacman or other runtime deps are updated).
+  However, rebuilding packages for a GCC version bump is not unreasonable, to
+  prevent excessive breakage... (v0.1.7) (depends on #pkgdir)
 - No build profiling (used disk space, memory, etc). (v0.1.8) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.1.8)
@@ -35,15 +42,8 @@ Things that the new system does not fix (yet):
 
 Things that have regressed:
 
-- We currently rebuild *all* native packages if a cross compiled package
-  changes. In reality, this is excessive; rebuilding packages because the kernel
-  is updated is a waste of resources, and we should be able to avoid some other
-  rebuilds (eg if pacman or other runtime deps are updated).
-  However, rebuilding packages for a GCC version bump is not unreasonable, to
-  prevent excessive breakage... (v0.1.7) (depends on pkg dir info)
-- We don't support groups. (v0.1.7)
 - Requires *even more* RAM, due to the chroot location, which is not currently
-  configurable. Requires build profiling. (v0.1.8)
+  configurable. (v0.1.8) (depends on #profile)
 
 # Usage #
 
