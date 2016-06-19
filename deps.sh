@@ -54,7 +54,7 @@ pprint_target() {
     tput bold
     printf "%s/" "${target%%/*}"
     tput setaf 2
-    printf "%s\n" "${target##*/}"
+    printf "%s\n" "${target#*/}"
     tput sgr0
 }
 
