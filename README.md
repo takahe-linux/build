@@ -54,3 +54,5 @@ To build an image suitable for using in QEMU, see mksysimage and popsysimage.
 To create a fs and boot it in QEMU using the supplied kernel:
  ./boot.sh _configdir_
 
+The scripts assume that you are running an up-to-date Arch Linux system, with
+base-devel installed. Additionally, you must have installed 'fakechroot'.
