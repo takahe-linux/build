@@ -28,8 +28,11 @@ main() {
 
     # Add the initial scripts.
     gendefhostname "${fs}"
-    genfstab "${fs}"
-    geninitscript "${fs}" "/usr/bin/getty -l /usr/bin/login 0 /dev/console"
+    cat > "${fs}/etc/init/run" << EOF
+#!/usr/bin/sh
+/usr/bin/getty -l /usr/bin/login 0 /dev/console
+EOF
+    chmod +x "${fs}/etc/init/run"
 
     # Run qemu and exit.
     genqemuscript "${fs}"

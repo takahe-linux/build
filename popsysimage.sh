@@ -32,7 +32,6 @@ populate_sysimage() {
         -U $(printallpkgs "${configdir}" packages native)
 
     # Add the initial scripts.
-    genfstab "${fs}"
     gendefhostname "${fs}"
 }
 

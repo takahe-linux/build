@@ -31,13 +31,11 @@ main() {
 
     # Add the initial scripts.
     gendefhostname "${fs}"
-    genfstab "${fs}"
-    geninitscript "${fs}" "/tests/run.sh"
 
     # Generate the test runner.
     rm -rf "${fs}/tests"
     mkdir "${fs}/tests"
-    cat > "${fs}/tests/run.sh" << EOF
+    cat > "${fs}/etc/init/run" << EOF
 #!/usr/bin/sh
 # Test runner.
 for file in /tests/*; do
@@ -50,8 +48,7 @@ for file in /tests/*; do
     fi
 done
 EOF
-    chmod +x "${fs}/tests/run.sh"
-    root_own "${fs}" "tests/run.sh"
+    chmod +x "${fs}/etc/init/run"
 
     # Install the test scripts.
     for test_script in "${configdir}/src/tests"/*; do
