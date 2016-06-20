@@ -6,7 +6,7 @@
 # Contact:  < hobbitalastair at yandex dot com >
 
 # Initial setup.
-VERSION="0.1"
+VERSION="1.0"
 USAGE="<config dir> [<target>]..."
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
