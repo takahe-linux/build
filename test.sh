@@ -44,8 +44,11 @@ for file in /tests/*; do
         out="\${file::-5}.out"
         rm -f "\${out}"
         touch "\${out}"
-        timeout -t ${timeout} "\${file}" >> "\${out}" || \
-            echo "Did not run - error '\$?' (possibly timeout)" >> "\${out}"
+        timeout -t ${timeout} "\${file}" >> "\${out}"
+        err="\$?"
+        if [ "\$err" -gt 127 ]; then
+            echo "Timeout: exit code '\${err}'" >> "\${out}"
+        fi
     fi
 done
 EOF
@@ -65,12 +68,14 @@ EOF
     "${fs}/qemu.sh" >> "${log}" 2>&1
 
     # Check the output.
+    message info "Results:"
     shopt -s nullglob
     for file in "${fs}/tests/"*.out; do
         local state="$(tail -n 1 "${file}")"
         case "${state}" in
-            "Success!") message info "${file##*/} passed!";;
-            "Fail!") message warn "${file##*/} failed!";;
+            'Success!') message info "${file##*/}: passed";;
+            'Fail!') message warn "${file##*/}: failed!";;
+            Timeout:*) message warn "${file##*/}: timed out!";;
             *) message error "${file##*/} did not finish!";;
         esac
     done
