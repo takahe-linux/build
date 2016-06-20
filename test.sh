@@ -38,6 +38,7 @@ main() {
     cat > "${fs}/etc/init/run" << EOF
 #!/usr/bin/sh
 # Test runner.
+trap 'poweroff -f' EXIT # Ensure that we shutdown.
 for file in /tests/*; do
     if [ "\${file: -5}" == ".test" ]; then
         out="\${file::-5}.out"
