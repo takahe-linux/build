@@ -22,17 +22,15 @@ remove_pkg() {
 
 main() {
     # Remove all the old, outdated packages and source tarballs.
-    # TODO: Also clean source tarballs!
     local configdir="$1"
     local dry_run="$2"
 
-    # Generate a list of the current packages.
-    local dir pkgsdirs
-    pkgdirs=()
-    for dir in "${configdir}/src/"*; do
-        pkgdirs+=("$(basename "${dir}")")
-    done
+    # Generate a list of the current packages and source tarballs.
+    local dir
+    local pkgdirs=()
+    for dir in "${configdir}/src/"*; do pkgdirs+=("$(basename "${dir}")"); done
     local pkgs=($(printallpkgs "${configdir}" ${pkgdirs[@]}))
+    local srctars=($(printallsrctars "${configdir}" ${pkgdirs[@]}))
 
     # Iterate through all of the built packages, removing any that are not in
     # the list of generated packages.
@@ -47,6 +45,21 @@ main() {
         done
         "${in_list}" || remove_pkg "${pkgfile}" "${dry_run}"
     done
+
+    # Iterate through all of the source tarballs, removing any that are not in
+    # the list of generated srctars.
+    local srctarfile srctar
+    for srctarfile in "${configdir}/srctar/"*/*; do
+        local in_list=false
+        for srctar in "${srctars[@]}"; do
+            if [ "${srctar}" == "${srctarfile}" ]; then
+                in_list=true
+                break
+            fi
+        done
+        "${in_list}" || remove_pkg "${srctarfile}" "${dry_run}"
+    done
+
 }
 
 # Parse the arguments.

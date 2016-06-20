@@ -442,3 +442,21 @@ printallpkgs() {
     done
 }
 
+printallsrctars() {
+    # Print all of the generated source tarballs from the given package dirs.
+    # We assume that the .SRCINFO exists corresponding to the given package.
+    local configdir="$1"
+    shift
+
+    local dir path name generated
+    for dir in "$@"; do
+        for path in "${configdir}/src/${dir}"/*; do
+            if [ -d "${path}" ] && [ -f "${path}/.SRCINFO" ]; then
+                name="$(printf '%s' "${path}" | rev | cut -d'/' -f1-2 | rev)"
+                generated="$(pkgdirsrctar "${configdir}" "${name}")" || \
+                    error 1 "Failed to generate the srctar path for '${name}'!"
+                printf "%s\n" "${generated}"
+            fi
+        done
+    done
+}
