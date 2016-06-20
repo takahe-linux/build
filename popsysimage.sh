@@ -26,13 +26,15 @@ populate_sysimage() {
     sudo mount "${sysimage}" "${point}" || \
         error 1 "Failed to mount the system image!"
     cleanup="sudo umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
-    sudo mkdir -p "${point}/var/lib/pacman"
+    sudo mkdir -p "${point}/var/lib/pacman" || \
+        error 1 "Failed to create '${point}/var/lib/pacman'!"
     # Install the packages.
-    callpacman "${point}" --needed --arch "${config[arch]}" \
+    sudo pacman --noconfirm --root "${point}" \
+        --needed --arch "${config[arch]}" \
         -U $(printallpkgs "${configdir}" packages native)
 
     # Add the initial scripts.
-    gendefhostname "${fs}"
+    sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"
 }
 
 # Set the usage string.
