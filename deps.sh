@@ -6,8 +6,8 @@
 # Contact:  < hobbitalastair at yandex dot com >
 
 # Initial setup.
-VERSION="0.1"
-USAGE="<config dir> [--no-pretty] [<target>]..."
+VERSION="1.0"
+USAGE="<config dir> [--no-pretty] [--prefix=<prefix> ...] [<target>]..."
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
 
