@@ -36,6 +36,11 @@ Things that the new system does not fix (yet):
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.1.8)
 - Asynchronous and networked builds. (v0.1.8)
+- Add support for a 
+  [config.site](https://www.gnu.org/software/autoconf/manual/autoconf-2.63/html_node/Site-Defaults.html)
+  file, which should help speed up builds through letting me manually cache
+  results, and ensure that cross-compiled packages work as expected (see the
+  bash PKGBUILD for examples). (v0.1.9)
 - No cross-compile support in makepkg (via libmakepkg?). (v0.3.0)
 - A new "branch" for something still requires a complete rebuild, or "dirtying"
   some shared branch. (v???)
