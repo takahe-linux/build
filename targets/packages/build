@@ -51,16 +51,14 @@ buildpackage() {
         gendefhostname "${basedir}"
 
         # Generate the build script.
-        # TODO: Remove build fixes; these should be fixed elsewhere.
         cat > "${basedir}/etc/init/run" << EOF
 #!/usr/bin/bash
 
 # Poweroff once finished.
 trap 'poweroff -f' EXIT
 
-# Misc fixes.
+# Busybox is not suid in a fakeroot environment; fix that.
 chmod +s /usr/bin/busybox
-sed -i /usr/bin/makepkg -e 's:--apparent-size::'
 
 # chmod the build directory.
 chgrp -R nobody /pkg
