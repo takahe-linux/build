@@ -7,7 +7,7 @@
 
 # Initial setup.
 VERSION="0.1"
-USAGE="<config dir>"
+USAGE="[-d|--dry-run] <config dir>"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
 source "$(dirname "$(realpath "$0")")/lib/libbuild.sh"
