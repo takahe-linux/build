@@ -74,7 +74,7 @@ EOF
         local state="$(tail -n 1 "${file}")"
         case "${state}" in
             'Success!') message info "${file##*/}: passed";;
-            'Fail!') message warn "${file##*/}: failed!";;
+            'Fail!') message error "${file##*/}: failed!";;
             Timeout:*) message warn "${file##*/}: timed out!";;
             *) message error "${file##*/} did not finish!";;
         esac
