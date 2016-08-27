@@ -76,7 +76,7 @@ EOF
 
         # Generate the qemu script.
         # TODO: How much RAM is enough? (#profile)
-        genqemuscript "${basedir}" 128
+        genqemuscript "${basedir}" 256
 
         # Try with KVM first, then fall back on non-kvm.
         "${basedir}/qemu.sh" -enable-kvm || \
