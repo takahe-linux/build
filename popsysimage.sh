@@ -18,6 +18,8 @@ populate_sysimage() {
     local configdir="$1"
     local sysimage="$2"
     local fs="$3"
+
+    loadrepoconf "${configdir}"
     
     # Prepare the mountpoint.
     point="$(sudo mktemp -d "${TMPDIR:-/tmp}/mount.XXXX")" || \
@@ -31,7 +33,7 @@ populate_sysimage() {
     # Install the packages.
     sudo pacman --noconfirm --root "${point}" \
         --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" packages native)
+        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native))
 
     # Add the initial scripts.
     sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"

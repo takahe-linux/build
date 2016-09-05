@@ -2,6 +2,7 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
+loadrepoconf "${configdir}"
 
 exists "${configdir}/src/${name}/PKGBUILD"
 exists "${configdir}/src/${name}/.SRCINFO"

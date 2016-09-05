@@ -9,6 +9,7 @@ source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libboot.sh"
+loadrepoconf "${configdir}"
 
 path="${configdir}/src/${target}"
 exists "${path}/PKGBUILD" || exit "$?"

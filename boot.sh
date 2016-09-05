@@ -19,12 +19,14 @@ main() {
     local configdir="$1"
     shift
 
+    loadrepoconf "${configdir}"
+
     local fs="${config[builddir]}/fs"
     mkdir -p "${fs}/var/lib/pacman"
 
     # Generate the list of packages and install them.
     callpacman "${fs}" --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" packages native)
+        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native))
 
     # Add the initial scripts.
     gendefhostname "${fs}"

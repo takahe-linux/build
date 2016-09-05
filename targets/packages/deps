@@ -8,6 +8,7 @@
 source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
+loadrepoconf "${configdir}"
 
 # We depend on the source tarball and the srcinfo.
 printf "srctar/${target}\n"

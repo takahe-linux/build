@@ -20,6 +20,8 @@ main() {
     local timeout="$2"
     shift 2
 
+    loadrepoconf "${configdir}"
+
     local fs="${config[builddir]}/tests"
     local log="${config[builddir]}/logs/test.log"
     mkdir -p "${fs}/var/lib/pacman"
@@ -27,7 +29,8 @@ main() {
     # Generate the list of packages and install them.
     message info "Populating test environment..."
     callpacman "${fs}" --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" packages native) > "${log}" 2>&1
+        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native)) \
+        > "${log}" 2>&1
 
     # Add the initial scripts.
     gendefhostname "${fs}"

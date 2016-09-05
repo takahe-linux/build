@@ -1,8 +1,46 @@
 # Package manipulation functions.
 
+# We record information about repo directories in a datastructure.
+declare -A repotype
+declare -A repodepends
+
 # Standardise the source and package name extensions.
 PKGEXT='.pkg.tar.xz'
 SRCEXT='.src.tar.gz'
+
+loadrepoconf() {
+    # Load the repo configs.
+    local configdir="$1"
+
+    # Add the case for host dependencies.
+    repotype["host"]="host"
+    
+    for conf in "${configdir}/src/"*/repo.conf; do
+        if [ ! -f "${conf}" ]; then
+            error 1 "No repo config files found!"
+        fi
+        local reponame="$(printf '%s' "${conf}" | rev | cut -d'/' -f2 | rev)"
+        while IFS="= $(printf '\t\n')" read key value; do
+            case "${key}" in
+                type) repotype["${reponame}"]="${value}";;
+                depends) repodepends["${reponame}"]="${value}";;
+                *) error 1 "Unknown key in '${conf}' - ${key}";;
+            esac
+        done < <(sed "${conf}" -n -e 's:^[ \t]*::' -e '/^[^#]/p')
+    done
+}
+
+getpkgdirs() {
+    # Print all directories with the corresponding repo types.
+    local dir repo
+    for dir in ${!repotype[@]}; do
+        for repo in "$@"; do
+            if [ "${repotype["${dir}"]}" == "${repo}" ]; then
+                printf "%s\n" "${dir}"
+            fi
+        done
+    done
+}
 
 pkgdirsrctar() {
     # Print the source tarball path for the given package dir.
@@ -45,8 +83,7 @@ pkgdirpackages() {
     # Set the arch as required.
     local carch
     if [ "${arch}" != "any" ]; then
-        # TODO: Make this more generic (#pkgdir)
-        if [ "${pkgdir%%/*}" == "toolchain" ]; then
+        if [ "${repotype["${pkgdir%%/*}"]}" == "toolchain" ]; then
             carch="$(uname -m)"
         else
             carch="${config[arch]}"
@@ -54,9 +91,9 @@ pkgdirpackages() {
     else
         carch="any"
     fi
-    # We special case PKGEXT for native.
-    # TODO: Remove special case (#pkgdir)
-    if [ "${pkgdir%%/*}" == "native" ]; then
+    # We special case PKGEXT for native packages.
+    # TODO: Remove special case.
+    if [ "${repotype["${pkgdir%%/*}"]}" == "native" ]; then
         PKGEXT=".pkg.tar.gz"
     fi
     for pkgname in ${pkgnames}; do
@@ -131,17 +168,18 @@ BUILDDIR="%s"
 }
 
 findpkgdir() {
-    # Given a package name and dir, find all packages in that dir that provide
-    # the given package name.
+    # Given a package name and repo type, find all packages from a repo of that
+    # type which provide the given package name.
     local configdir="$1"
     local target_name="$2"
-    local dir="$3"
+    local repo="$3"
 
     local pkg providers provdir provider
     while IFS=":" read pkg providers; do
         if [ "${pkg}" == "${target_name}" ]; then
             while IFS="\/ " read provdir provider; do
-                if [ "${provdir}" == "${dir}" ]; then
+                if [ -n "${provdir}" ] && \
+                    [ "${repotype["${provdir}"]}" == "${repo}" ]; then
                     printf "%s/%s\n" "${provdir}" "${provider}"
                 fi
             done < <(printf "%s" "${providers}" | tr ' ' '\n')
@@ -152,28 +190,24 @@ findpkgdir() {
 findpkgdeps() {
     # Evaluate the deps piped in on stdin to dirs.
     local configdir="$1"
-    local prefix="$2"
+    local repo="${repotype["$2"]}"
     local deptype dep
     while IFS="= $(printf '\t\n')" read deptype dep; do
         if [ -z "${dep}" ]; then
             continue
         fi
-        local depdir skip_missing
-        if [ "${deptype}" == "hostdepends" ] || \
-            [ "${deptype}" == "checkdepends" ]; then
-            # We treat checkdepends as host dependencies.
-            depdirs="toolchain"
-            host_missing="true"
-        elif [ "${prefix}" == "toolchain" ] && \
-            [ "${deptype}" != "targetdepends" ]; then
-            depdirs="toolchain"
-            host_missing="true"
-        elif [ "${prefix}" == "packages" ]; then
-            depdirs="packages"
-            host_missing="false"
+        local depdirs depdir
+        if [ "${repo}" == "native" ]; then
+            depdirs="native cross"
         else
-            depdirs="native packages"
-            host_missing="false"
+            if [ "${deptype}" == "targetdepends" ]; then
+                depdirs="cross"
+            elif [ "${deptype}" == "hostdepends" ] || \
+                [ "${deptype}" == "checkdepends" ]; then
+                depdirs="toolchain"
+            else
+                depdirs="${repo}"
+            fi
         fi
         for depdir in ${depdirs}; do
             local providers="$(findpkgdir "${configdir}" "${dep}" \
@@ -254,9 +288,9 @@ installdeps() {
         stack=(${stack[@]:0:$(expr "${#stack[@]}" - 1)})
 
         # Add the item to the appropriate list.
-        case "${current%%/*}" in
+        case "${repotype["${current%%/*}"]}" in
             toolchain) tooldepends+=("${current}");;
-            packages) crossdepends+=("${current}");;
+            cross) crossdepends+=("${current}");;
             native) nativedepends+=("${current}");;
             host) # For host dependencies, we don't need to recurse.
                 tooldepends+=("${current}")
@@ -320,12 +354,12 @@ installtooldeps() {
     # Install the given list of host deps.
     # Fall back to the host packages if no matching packages are found.
     local configdir="$1"
-    local prefix="$2"
+    local repo="${repotype["$2"]}"
     local basedir="$3"
     shift 3
-    if [ "$#" -eq 0 ] && [ "${prefix}" != "packages" ]; then return; fi
+    if [ "$#" -eq 0 ] && [ "${repo}" != "cross" ]; then return; fi
 
-    if [ "${prefix}" == "native" ]; then
+    if [ "${repo}" == "native" ]; then
         error 1 "Cannot install host deps to a native root!"
     fi
 
@@ -368,12 +402,12 @@ installtooldeps() {
 installcrossdeps() {
     # Install the given list of cross compiled deps.
     local configdir="$1"
-    local prefix="$2"
+    local repo="${repotype["$2"]}"
     local basedir="$3"
     shift 3
     if [ "$#" -eq 0 ]; then return; fi
 
-    if [ "${prefix}" == "native" ]; then
+    if [ "${repo}" == "native" ]; then
         local root="${basedir}"
     else
         local root="${basedir}/sysroot/"
@@ -395,12 +429,12 @@ installcrossdeps() {
 installnativedeps() {
     # Install the given list of native deps.
     local configdir="$1"
-    local prefix="$2"
+    local repo="${repotype["$2"]}"
     local basedir="$3"
     shift 3
     if [ "$#" -eq 0 ]; then return; fi
 
-    if [ "${prefix}" != "native" ]; then
+    if [ "${repo}" != "native" ]; then
         error 1 "Cannot install native deps to a non-native root!"
     fi
 

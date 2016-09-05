@@ -25,6 +25,8 @@ main() {
     local configdir="$1"
     local dry_run="$2"
 
+    loadrepoconf "${configdir}"
+
     # Generate a list of the current packages and source tarballs.
     local dir
     local pkgdirs=()
