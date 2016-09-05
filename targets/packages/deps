@@ -14,6 +14,7 @@ loadrepoconf "${configdir}"
 printf "srctar/${target}\n"
 printf "srcinfo/${target}\n"
 printf "path/config\n"
+printf "path/src/${prefix}/repo.conf\n"
 
 # We also depend on some other packages.
 path="${configdir}/src/${target}/PKGBUILD"
