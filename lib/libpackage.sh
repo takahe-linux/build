@@ -243,6 +243,20 @@ checkprov() {
     fi
 }
 
+gendeps() {
+    local configdir="$1"
+    local target="$2"
+    local lsdeps="$3"
+
+    # Pull the dependencies from the PKGBUILD.
+    "${lsdeps}" <(genmakepkgconf "${configdir}" "${target}") \
+        "${configdir}/src/${target}/PKGBUILD" || \
+        error 1 "Failed to extract the deps from the PKGBUILD!"
+
+    # Add the extra dependencies from the repo config.
+    printf 'makedepends = %s\n' ${repodepends["${target%%/*}"]}
+}
+
 installdeps() {
     local configdir="$1"
     local target="$2"
@@ -264,10 +278,7 @@ installdeps() {
     # We cannot just put the target on the stack, as it has a different
     # dependency generation script, and should not end up in *depends.
     local deps
-    deps="$("${lsdeps}" \
-        <(genmakepkgconf "${configdir}" "${target}") \
-        "${configdir}/src/${target}/PKGBUILD")" || \
-        error 1 "Failed to extract the deps from the PKGBUILD!"
+    deps="$(gendeps "${configdir}" "${target}" "${lsdeps}")" || exit 1
     local dep prov
     while IFS=" " read dep prov; do
         checkprov "${dep}" "${prov}"
