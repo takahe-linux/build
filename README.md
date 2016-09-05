@@ -25,7 +25,7 @@ Things that the new system does not fix (yet):
 - Package directories should not be identified by name, but by a file which
   contains the required information. (v0.1.7) (#pkgdir)
 - No "check for updates" script support. (v0.1.7)
-- We don't support groups. (v0.1.7)
+- We don't support groups - useful for disk images. (v0.1.8)
 - No build profiling (used disk space, memory, etc). (v0.1.8) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.1.8)
