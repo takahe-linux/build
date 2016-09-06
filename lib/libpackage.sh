@@ -91,11 +91,7 @@ pkgdirpackages() {
     else
         carch="any"
     fi
-    # We special case PKGEXT for native packages.
-    # TODO: Remove special case.
-    if [ "${repotype["${pkgdir%%/*}"]}" == "native" ]; then
-        PKGEXT=".pkg.tar.gz"
-    fi
+
     for pkgname in ${pkgnames}; do
         printf "%s-%s-%s-%s%s\n" "${pkgname}" "${pkgver}" "${pkgrel}" \
             "${carch}" "${PKGEXT}"
