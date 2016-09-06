@@ -33,7 +33,7 @@ populate_sysimage() {
     # Install the packages.
     sudo pacman --noconfirm --root "${point}" \
         --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native))
+        -U $(printallpkgs "${configdir}" $(getpkgdirs cross native))
 
     # Add the initial scripts.
     sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"

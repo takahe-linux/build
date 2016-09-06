@@ -29,7 +29,7 @@ main() {
     # Generate the list of packages and install them.
     message info "Populating test environment..."
     callpacman "${fs}" --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native)) \
+        -U $(printallpkgs "${configdir}" $(getpkgdirs cross native)) \
         > "${log}" 2>&1
 
     # Add the initial scripts.

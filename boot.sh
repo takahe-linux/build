@@ -26,7 +26,7 @@ main() {
 
     # Generate the list of packages and install them.
     callpacman "${fs}" --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" $(getpkgdirs packages native))
+        -U $(printallpkgs "${configdir}" $(getpkgdirs cross native))
 
     # Add the initial scripts.
     gendefhostname "${fs}"
