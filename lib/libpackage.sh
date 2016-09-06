@@ -226,7 +226,7 @@ findpkgdeps() {
                 # We use a "fake" host package instead.
                 printf "%s host/%s\n" "${dep}" "${dep}"
             fi
-        elif [ -n "${providers}" ]; then
+        else
             printf "%s %s\n" "${dep}" "${providers}"
         fi
     done < /dev/stdin
