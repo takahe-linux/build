@@ -16,19 +16,19 @@ fi
 
 # We take the checksum of the PKGBUILD, which should change if anything else
 # does.
-path="${configdir}/src/${target}/PKGBUILD"
+path="${configdir}/src/${name}/PKGBUILD"
 exists "${path}"
 sum="$(sum_file "${path}")" || exit $?
 
 message debug "Checking ${path}"
 # We also need to take the sum of the built package.
-if [ ! -f "${configdir}/src/${target}/.SRCINFO" ]; then
+if [ ! -f "${configdir}/src/${name}/.SRCINFO" ]; then
     # Bail early if there is no .SRCINFO.
     printf "old"
     exit 0
 fi
-packages="$(pkgdirpackages "${configdir}" "${target}")" || \
-    error "$?" "Failed to generate a list of packages for '${target}'!"
+packages="$(pkgdirpackages "${configdir}" "${name}")" || \
+    error "$?" "Failed to generate a list of packages for '${name}'!"
 for pkg in ${packages}; do
     message debug "Trying to sum ${configdir}/pkgs/${pkg}"
     newsum="$(sum_file "${configdir}/pkgs/${pkg}")"

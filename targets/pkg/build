@@ -10,6 +10,8 @@ source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libboot.sh"
 
+[ "${name%%/*}" == "host" ] && exit
+
 # Set the repo type.
 loadrepoconf "${configdir}"
 repo="${repotype["${name%%/*}"]}"
