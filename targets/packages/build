@@ -11,8 +11,7 @@ source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libboot.sh"
 loadrepoconf "${configdir}"
 
-path="${configdir}/src/${target}"
-exists "${path}/PKGBUILD" || exit "$?"
+exists "${configdir}/src/${target}/PKGBUILD" || exit "$?"
 
 # TODO: Automatically pick a dir with enough space (#profile)
 basedir="${config[builddir]}/${target}" 
@@ -45,7 +44,7 @@ buildpackage() {
 
     message info "Building the package..."
 
-    if [ "${prefix}" == "native" ]; then
+    if [ "${repotype["${prefix}"]}" == "native" ]; then
         # Native packages are different; we currently just use QEMU.
 
         # Generate the default hostname.
@@ -103,8 +102,7 @@ EOF
 
         # Create the pacman wrapper.
         local wrapper="/usr/bin/pacman"
-        if [ "${target%%/*}" == "packages" ]; then
-            # TODO: Make this more generic? (#pkgdir)
+        if [ "${repotype["${prefix}"]}" == "cross" ]; then
             # We need this when cross compiling; makepkg doesn't know where it
             # should look, so the dependency checks fail.
             wrapper="/usr/bin/sysroot-pacman"
