@@ -23,6 +23,9 @@ Unfortunately, that script had a few... issues:
 Things that the new system does not fix (yet):
 
 - No "check for updates" script support. (v0.1.7)
+- Fix boot.sh and test.sh to work even with conflicting packages. (v0.1.7)
+- Add support for architecture-specific packages. (v0.1.7)
+- Add a mkiso script. (v0.1.7)
 - We don't support groups - useful for disk images. (v0.1.8)
 - No build profiling (used disk space, memory, etc). (v0.1.8) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
