@@ -1,4 +1,0 @@
-#!/usr/bin/sh
-# For speed reasons, just print 'na'.
-# We also have issues if the given package name contains a version requirement.
-printf 'na'

@@ -5,6 +5,15 @@ source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 loadrepoconf "${configdir}"
 
+# Special case host packages.
+if [ "${name%%/*}" == "host" ]; then
+    # For speed reasons, just print 'na'.
+    # We also have issues if the given package name contains a version
+    # requirement.
+    printf 'na'
+    exit
+fi
+
 # We take the checksum of the PKGBUILD, which should change if anything else
 # does.
 path="${configdir}/src/${target}/PKGBUILD"

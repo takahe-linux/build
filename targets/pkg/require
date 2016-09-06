@@ -2,5 +2,7 @@
 # Print out the required targets for the dependency and state scripts.
 # We rely on the .SRCINFO file being created.
 
-printf "srcinfo/$2\n"
+[ "$(printf '%s' "${2}" | cut -d/ -f2)" == "host" ] && exit
+
+printf "srcinfo/${2#*/}\n"
 printf "pkglist\n"      # The pkglist is required...

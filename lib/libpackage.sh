@@ -167,7 +167,7 @@ BUILDDIR="%s"
     cat "${outfile}"
 }
 
-findpkgdir() {
+findpkg() {
     # Given a package name and repo type, find all packages from a repo of that
     # type which provide the given package name.
     local configdir="$1"
@@ -180,7 +180,7 @@ findpkgdir() {
             while IFS="\/ " read provdir provider; do
                 if [ -n "${provdir}" ] && \
                     [ "${repotype["${provdir}"]}" == "${repo}" ]; then
-                    printf "%s/%s\n" "${provdir}" "${provider}"
+                    printf "pkg/%s/%s\n" "${provdir}" "${provider}"
                 fi
             done < <(printf "%s" "${providers}" | tr ' ' '\n')
         fi
@@ -210,7 +210,7 @@ findpkgdeps() {
             fi
         fi
         for depdir in ${depdirs}; do
-            local providers="$(findpkgdir "${configdir}" "${dep}" \
+            local providers="$(findpkg "${configdir}" "${dep}" \
                 "${depdir}")" \
                 || error 3 "Failed to get providers for '${dep}'!"
             if [ -n "${providers}" ]; then
@@ -224,7 +224,7 @@ findpkgdeps() {
                 error 4 "Found no providers for '${dep}' of type '${deptype}'!"
             else
                 # We use a "fake" host package instead.
-                printf "%s host/%s\n" "${dep}" "${dep}"
+                printf "%s pkg/host/%s\n" "${dep}" "${dep}"
             fi
         else
             printf "%s %s\n" "${dep}" "${providers}"
@@ -298,15 +298,20 @@ installdeps() {
         local current="${stack[-1]}"
         stack=(${stack[@]:0:$(expr "${#stack[@]}" - 1)})
 
+        if [ "${current%%/*}" != 'pkg' ]; then
+            error 2 "Unknown prefix '${current%%/*}'"
+        fi
+
         # Add the item to the appropriate list.
-        case "${repotype["${current%%/*}"]}" in
-            toolchain) tooldepends+=("${current}");;
-            cross) crossdepends+=("${current}");;
-            native) nativedepends+=("${current}");;
+        local pkg="${current#*/}"
+        case "${repotype["${pkg%%/*}"]}" in
+            toolchain) tooldepends+=("${pkg}");;
+            cross) crossdepends+=("${pkg}");;
+            native) nativedepends+=("${pkg}");;
             host) # For host dependencies, we don't need to recurse.
-                tooldepends+=("${current}")
+                tooldepends+=("${pkg}")
                 continue;;
-            *) error 2 "Unknown provider prefix '${current%%/*}'!"
+            *) error 2 "Unknown repo '${pkg%%/*}'!"
         esac
 
         # Process the dependencies.
@@ -322,9 +327,9 @@ installdeps() {
                 visited["${prov}"]="${dep}"
                 stack+=("${prov}")
             fi
-        done < <(sed "${configdir}/src/${current}/.SRCINFO" -n \
+        done < <(sed "${configdir}/src/${pkg}/.SRCINFO" -n \
             -e '/^[ \t]*depends = /p' | \
-            findpkgdeps "${configdir}" "${current%%/*}") || \
+            findpkgdeps "${configdir}" "${pkg%%/*}") || \
             error 3 "Failed to generate the package providers!"
     done
 

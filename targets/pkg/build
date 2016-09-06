@@ -9,12 +9,15 @@ source "$(dirname "$0")/../../lib/libmain.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libboot.sh"
-loadrepoconf "${configdir}"
 
-exists "${configdir}/src/${target}/PKGBUILD" || exit "$?"
+# Set the repo type.
+loadrepoconf "${configdir}"
+repo="${repotype["${name%%/*}"]}"
+
+exists "${configdir}/src/${name}/PKGBUILD" || exit "$?"
 
 # TODO: Automatically pick a dir with enough space (#profile)
-basedir="${config[builddir]}/${target}" 
+basedir="${config[builddir]}/${name}" 
 
 extractsrctar() {
     # Find and extract the source tarball.
@@ -39,12 +42,13 @@ extractsrctar() {
 buildpackage() {
     # Build the package.
     local configdir="$1"
-    local basedir="$2"
-    local prefix="$3"
+    local target="$2"
+    local repo="$3"
+    local basedir="$4"
 
     message info "Building the package..."
 
-    if [ "${repotype["${prefix}"]}" == "native" ]; then
+    if [ "${repo}" == "native" ]; then
         # Native packages are different; we currently just use QEMU.
 
         # Generate the default hostname.
@@ -102,7 +106,7 @@ EOF
 
         # Create the pacman wrapper.
         local wrapper="/usr/bin/pacman"
-        if [ "${repotype["${prefix}"]}" == "cross" ]; then
+        if [ "${repo}" == "cross" ]; then
             # We need this when cross compiling; makepkg doesn't know where it
             # should look, so the dependency checks fail.
             wrapper="/usr/bin/sysroot-pacman"
@@ -141,14 +145,14 @@ fi
 mkdir -p "${basedir}" || error 1 "Failed to create build dir '${basedir}'!"
 # Populate the sysroot.
 message info "Populating the sysroot..."
-installdeps "${configdir}" "${target}" "${basedir}" \
+installdeps "${configdir}" "${name}" "${basedir}" \
     "$(dirname "$0")/../../scripts/lsdeps.sh"
 # Extract the source tarball.
 message info "Unpacking the source tarball..."
-extractsrctar "${configdir}" "${target}" "${basedir}"
+extractsrctar "${configdir}" "${name}" "${basedir}"
 
 # Build the package.
-buildpackage "${configdir}" "${basedir}" "${prefix}"
+buildpackage "${configdir}" "${name}" "${repo}" "${basedir}"
 
 # Copy the built packages into the pkg dir.
 cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/" || \

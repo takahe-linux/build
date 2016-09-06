@@ -10,21 +10,24 @@ source "$(dirname "$0")/../../lib/libpackage.sh"
 source "$(dirname "$0")/../../lib/libtarget.sh"
 loadrepoconf "${configdir}"
 
+# Special case host packages.
+[ "${name%%/*}" == "host" ] && exit
+
 # We depend on the source tarball and the srcinfo.
-printf "srctar/${target}\n"
-printf "srcinfo/${target}\n"
+printf "srctar/${name}\n"
+printf "srcinfo/${name}\n"
 printf "path/config\n"
-printf "path/src/${prefix}/repo.conf\n"
+printf "path/src/${name%%/*}/repo.conf\n"
 
 # We also depend on some other packages.
-path="${configdir}/src/${target}/PKGBUILD"
+path="${configdir}/src/${name}/PKGBUILD"
 exists "${path}" || exit "$?"
 # Extract the deps.
-deps="$(gendeps "${configdir}" "${target}" \
+deps="$(gendeps "${configdir}" "${name}" \
     "$(dirname "$0")/../../scripts/lsdeps.sh")" || \
     exit 1
 # Turn the deps into actual paths.
 pkgpaths="$(printf "%s\n" "${deps}" | \
-    findpkgdeps "${configdir}" "${prefix}")" || \
+    findpkgdeps "${configdir}" "${name%%/*}")" || \
     error "$?" "Failed to find the package dirs!"
 printf "%s\n" "${pkgpaths}" | cut -d' ' -f2-
