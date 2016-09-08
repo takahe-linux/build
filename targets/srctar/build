@@ -20,6 +20,7 @@ trap "rm -f '${conf}'" EXIT
 localmakepkgconf >> "${conf}"
 genmakepkgconf "${configdir}" "${name}" >> "${conf}"
 printf 'SRCPKGDEST="%s/srctar/%s"\n' "${configdir}" "${name%%/*}" >> "${conf}"
+mkdir -p "${configdir}/srctar/${name%%/*}"
 # Make the source tarball.
 makepkg -f --allsource --config "${conf}" || \
     error 1 "Failed to generate the source tarball!"
