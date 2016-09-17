@@ -112,12 +112,33 @@ check_nodl() {
         return
     fi
 
-    local dynamic_section
-    dynamic_section="$(readelf -d "${f}" 2> /dev/null)" || \
+    local readelf arch
+    readelf="$(readelf -h -d "${f}" 2> /dev/null)" || \
         continue
-    if printf '%s' "${dynamic_section}" | \
+    arch="$(printf '%s' "${readelf}" | sed -n -e '/Machine:/p' | \
+        sed 's/.*:[ \t]*//' | head -n 1)"
+    # Check that the file is statically linked.
+    if printf '%s' "${readelf}" | \
         grep '^Dynamic section' > /dev/null; then
         fail_dir "${dir}" "Found dynamic linked file ${f}"
+    fi
+    # Check arch.
+    if [ -z "${arch}" ]; then
+        arch="${global_arch}"
+    fi
+    if [ -z "${global_arch}" ]; then
+        global_arch="${arch}"
+    fi
+    if [ "${global_arch}" != "${arch}" ]; then
+        fail_dir "${dir}" "${f} has arch '${arch}', not '${global_arch}'!"
+    fi
+    # Check that the binary is stripped.
+    # We ignore object files, as they need the symbols.
+    local ext="$(printf '%s' "${f}" | rev | cut -d. -f1 | rev)"
+    if [ "${ext}" != 'o' ] && [ "${ext}" != 'ko' ]; then
+        if file "${f}" | grep 'not stripped' > /dev/null; then
+            fail_dir "${dir}" "Found an unstripped file ${f}"
+        fi
     fi
 }
 
@@ -198,7 +219,7 @@ check_symlinks() {
 }
 
 main() {
-    # Check the packages created by the given package dir.
+    # Check the packages.
     local configdir="$1"
     loadrepoconf "${configdir}"
 
