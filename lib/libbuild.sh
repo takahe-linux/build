@@ -373,18 +373,32 @@ rebuild() {
 }
 
 get_target_list() {
-    # Print a list of targets. Default is all of the targets found in the
-    # source directory.
+    # Print a list of targets.
+    # Default is all of the found packages available for the given architecture.
     local configdir="$1"
     shift
 
     if [ "$#" -eq 0 ]; then
-        local target_list=()
-        for targ in "${configdir}"/src/targets/*; do
-            target_list+=("$(echo "${targ}" | grep -o -e '[^/]*/[^/]*$')")
+        local dir pkgdir
+        for dir in "${configdir}/src/"*; do
+            if [ -f "${dir}/repo.conf" ]; then
+                for pkgdir in "${dir}/"*; do
+                    if [ -e "${pkgdir}/PKGBUILD" ]; then
+                        # Check that the architecture is correct.
+                        # We can't use the .SRCINFO as it may not be generated
+                        # yet.
+                        if grep "${pkgdir}/PKGBUILD" \
+                            -e "arch=(.*'${config[arch]}'.*)" > /dev/null \
+                            || grep "${pkgdir}/PKGBUILD" \
+                            -e "arch=(.*'any'.*)" > /dev/null; then
+                            printf 'pkg/'
+                            printf '%s\n' "${pkgdir}" | rev | cut -d/ -f1-2 | rev
+                        fi
+                    fi
+                done
+            fi
         done
     else
-        local target_list="$@"
+        printf "%s\n" "${@}"
     fi
-    printf "%s\n" "${target_list[@]}"
 }
