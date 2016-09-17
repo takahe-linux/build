@@ -36,6 +36,11 @@ main() {
 EOF
     chmod +x "${fs}/etc/init/run"
 
+    # Install the utilities.
+    for file in "${configdir}/src/util/"*; do
+        install -m0755 "${file}" "${fs}/usr/bin/"
+    done
+
     # Run qemu and exit.
     genqemuscript "${fs}"
     "${fs}/qemu.sh"
