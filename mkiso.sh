@@ -104,6 +104,10 @@ EOF
     chmod +x "${fs}/etc/init/run"
     root_own "${fs}" 'etc/init/run'
 
+    # Create a repo on the CDROM, for ease of access.
+    install -dm0755 "${fs}/repo"
+    cp "${configdir}/pkgs/"* "${fs}/repo/"
+
     # Generate the iso.
     # We need -rock (rock ridge extensions) and -no-emul-boot to let us have
     # extended permissions and such exotic things as symlinks!
