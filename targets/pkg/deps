@@ -13,11 +13,15 @@ loadrepoconf "${configdir}"
 # Special case host packages.
 [ "${name%%/*}" == "host" ] && exit
 
-# We depend on the source tarball and the srcinfo.
-printf "srctar/${name}\n"
-printf "srcinfo/${name}\n"
+# We depend on some extra files.
+printf "srctar/%s\n" "${name}"
+printf "srcinfo/%s\n" "${name}"
 printf "path/config\n"
-printf "path/src/${name%%/*}/repo.conf\n"
+printf "path/src/%s/repo.conf\n" "${name%%/*}"
+makepkgconf="src/${name%%/*}/makepkg.conf"
+if [ -f "${configdir}/${makepkgconf}" ]; then
+    printf 'path/%s\n' "${makepkgconf}"
+fi
 
 # We also depend on some other packages.
 path="${configdir}/src/${name}/PKGBUILD"
