@@ -157,8 +157,15 @@ extractsrctar "${configdir}" "${name}" "${basedir}"
 buildpackage "${configdir}" "${name}" "${repo}" "${basedir}"
 
 # Copy the built packages into the pkg dir.
-cp "${basedir}"/pkg/*.pkg.tar.* "${configdir}/pkgs/" || \
-    error 1 "No packages generated!"
+for pkgname in $(pkgdirpackages "${configdir}" "${name}"); do
+    cp "${basedir}/pkg/${pkgname}" "${configdir}/pkgs" || \
+        error 1 "Package '${pkgname}' not generated!"
+    # Add the package to the repo if needed.
+    if [ "${repo}" == 'cross' ] || [ "${repo}" == 'native' ]; then
+        repo-add "${configdir}/pkgs/core.db.tar.gz" \
+            "${configdir}/pkgs/${pkgname}"
+    fi
+done
 
 # Clean up the build dir.
 message info "Cleaning up..."
