@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+# We need pkglist for the srcinfo files.
+printf 'pkglist'

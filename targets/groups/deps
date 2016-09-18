@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+# List the packages belonging to the given group.
+
+source "$(dirname "$0")/../../lib/libmain.sh"
+source "$(dirname "$0")/../../lib/libtarget.sh"
+
+for dir in "${configdir}/src/"*/*; do
+    if [ -d "${dir}" ] && [ -f "${dir}/.SRCINFO" ]; then
+        if grep "${dir}/.SRCINFO" -e "groups = ${name}" > /dev/null; then
+            printf 'pkg/'
+            printf '%s\n' "${dir}" | rev | cut -d '/' -f 1-2 | rev
+        fi
+    fi
+done
