@@ -67,16 +67,16 @@ check_root() {
 
     local valid=(
         [boot]=""
-        [etc]=""
-        [usr]=""
-        [var]=""
-        [run]=""
-        [home]=""
-        [root]=""
         [dev]=""
+        [etc]=""
+        [home]=""
+        [mnt]=""
         [proc]=""
         [sys]=""
         [tmp]=""
+        [run]=""
+        [usr]=""
+        [var]=""
     )
 
     for i in "${dir}"/*; do
