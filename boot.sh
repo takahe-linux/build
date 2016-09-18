@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Create and boot a filesystem with all of the available packages installed.
+# Create and boot a simple filesystem.
 #
 # Author:   Alastair Hughes
 # Contact:  < hobbitalastair at yandex dot com >
@@ -24,9 +24,8 @@ main() {
     local fs="${config[builddir]}/fs"
     mkdir -p "${fs}/var/lib/pacman"
 
-    # Generate the list of packages and install them.
-    callpacman "${fs}" --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" $(getpkgdirs cross native))
+    # Install the packages.
+    installpkglist "${configdir}" "${fs}" qemu
 
     # Add the initial scripts.
     gendefhostname "${fs}"

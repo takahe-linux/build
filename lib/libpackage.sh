@@ -506,3 +506,28 @@ printallsrctars() {
         done
     done
 }
+
+installpkglist() {
+    # Bootstrap the pacman db and install all of the required packages.
+    local configdir="$1"
+    local fs="$2"
+    local pkglist="$3"
+
+    # Generate the temporary config file.
+    local pacconf="${fs}/pacman.conf"
+    cat > "${pacconf}" << EOF
+[options]
+Architecture = ${config[arch]}
+
+[core]
+Server = file://$(realpath "${configdir}")/pkgs/
+EOF
+
+    # Run pacman...
+    callpacman "${fs}" --cachedir "${configdir}/pkgs/" \
+        --config "${pacconf}" \
+        -Sy $(cat "${configdir}/src/targets/${pkglist}")
+    # Clean up...
+    rm -f "${pacconf}"
+}
+

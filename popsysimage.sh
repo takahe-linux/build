@@ -31,9 +31,7 @@ populate_sysimage() {
     sudo mkdir -p "${point}/var/lib/pacman" || \
         error 1 "Failed to create '${point}/var/lib/pacman'!"
     # Install the packages.
-    sudo pacman --noconfirm --root "${point}" \
-        --needed --arch "${config[arch]}" \
-        -U $(printallpkgs "${configdir}" $(getpkgdirs cross native))
+    installpkglist "${configdir}" "${fs}" qemu
 
     # Add the initial scripts.
     sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"
