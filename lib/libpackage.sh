@@ -5,7 +5,8 @@ declare -A repotype
 declare -A repodepends
 
 # Standardise the source and package name extensions.
-PKGEXT='.pkg.tar.xz'
+# Use gzip as it requires less memory to decompress.
+PKGEXT='.pkg.tar.gz'
 SRCEXT='.src.tar.gz'
 
 loadrepoconf() {
