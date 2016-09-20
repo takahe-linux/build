@@ -37,7 +37,7 @@ main() {
     # Iterate through all of the built packages, removing any that are not in
     # the list of generated packages.
     local pkgfile pkg
-    for pkgfile in "${configdir}/pkgs/"*; do
+    for pkgfile in "${configdir}/pkgs/"*.pkg.tar.*; do
         local in_list=false
         for pkg in ${pkgs[@]}; do
             if [ "${pkg}" == "${pkgfile}" ]; then
