@@ -16,7 +16,7 @@ set -e
 shopt -s nullglob
 
 VERSION="0.1"
-USAGE="<config dir>"
+USAGE="<config dir> [<pkg path> ...]"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
 
@@ -218,15 +218,30 @@ check_symlinks() {
     done
 }
 
+print_targets() {
+    # Print the given path, or all packages if none are passed.
+    local configdir="$1"
+    shift
+    if [ "$#" -eq 0 ]; then
+        printallpkgs "${configdir}" $(getpkgdirs cross native)
+    else
+        local pkg
+        for pkg in "$@"; do
+            printf '%s\n' "${pkg}"
+        done
+    fi
+}
+
 main() {
     # Check the packages.
     local configdir="$1"
+    shift
     loadrepoconf "${configdir}"
 
     local pkg dir
     dir="${config[builddir]}/pkgtest"
     trap "rm -rf '${dir}'" EXIT
-    printallpkgs "${configdir}" $(getpkgdirs cross native) |
+    print_targets "${configdir}" "$@" |
     while read pkg; do
         local pkgname="$(basename "${pkg}")"
         rm -rf "${dir}"; mkdir "${dir}"
@@ -237,6 +252,7 @@ main() {
 }
 
 CONFIGDIR=""    # Set the initial config dir.
+PKGS=""         # Packages to check.
 parseargs "$@"  # Initial argument parse.
 # Manual argument parse.
 for arg in "$@"; do
@@ -245,10 +261,14 @@ for arg in "$@"; do
         *) if [ -z "${CONFIGDIR}" ]; then
             CONFIGDIR="${arg}"
         else
-            error 1 "Unknown arg '${arg}'!"
+            if [ -f "${arg}" ]; then
+                PKGS+=" ${arg}"
+            else
+                error 2 "Package '${arg}' is not a file!"
+            fi
         fi;;
     esac
 done
 setup "${CONFIGDIR}"
 
-main "${CONFIGDIR}"
+main "${CONFIGDIR}" "${PKGS}"
