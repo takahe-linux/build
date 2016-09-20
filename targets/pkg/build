@@ -66,6 +66,9 @@ trap 'poweroff -f' EXIT
 # Busybox is not suid in a fakeroot environment; fix that.
 chmod +s /usr/bin/busybox
 
+# The permissions for /tmp are wrong in fakechroot; fix that.
+chmod 1777 /tmp
+
 # chmod the build directory.
 chgrp -R nobody /pkg
 chmod g+ws /pkg
