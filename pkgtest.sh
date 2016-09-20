@@ -97,9 +97,9 @@ check_nodirs() {
         fi
     done
 
-    # Fail if a package (except gdb) provides usr/lib/charset.alias.
+    # Fail if a package (except gettext) provides usr/lib/charset.alias.
     if [ -e "${dir}/usr/lib/charset.alias" ] && \
-        [ "$(get_pkgname "${dir}")" != "gdb" ]; then
+        [ "$(get_pkgname "${dir}")" != "gettext" ]; then
         fail_dir "${dir}" "Found usr/lib/charset.alias!"
     fi
 }
@@ -228,13 +228,13 @@ print_targets() {
     # Print the given path, or all packages if none are passed.
     local configdir="$1"
     shift
-    if [ "$#" -eq 0 ]; then
-        printallpkgs "${configdir}" $(getpkgdirs cross native)
-    else
+    if [ -n "$@" ]; then
         local pkg
         for pkg in "$@"; do
             printf '%s\n' "${pkg}"
         done
+    else
+        printallpkgs "${configdir}" $(getpkgdirs cross native)
     fi
 }
 
