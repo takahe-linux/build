@@ -96,6 +96,12 @@ check_nodirs() {
             fail_dir "${dir}" "Found unwanted path '${path}'"
         fi
     done
+
+    # Fail if a package (except gdb) provides usr/lib/charset.alias.
+    if [ -e "${dir}/usr/lib/charset.alias" ] && \
+        [ "$(get_pkgname "${dir}")" != "gdb" ]; then
+        fail_dir "${dir}" "Found usr/lib/charset.alias!"
+    fi
 }
 
 check_nodl() {
