@@ -133,6 +133,10 @@ PACMAN='${wrapper}' makepkg
 EOF
         chmod +x "${basedir}/build.sh"
 
+        # Make makepkg use the correct strip when cross compiling.
+        sed -i -e "s:strip \$@:${config[triplet]}-strip \$@:" \
+            "${basedir}/usr/share/makepkg/tidy/strip.sh"
+
         # TODO: We need the path, otherwise depcomp fails in the gcc build
         #       (only for some architectures, though!)
         # TODO: Find a better fakechroot alternative?
