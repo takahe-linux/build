@@ -23,7 +23,6 @@ Unfortunately, that script had a few... issues:
 Things that the new system does not fix (yet):
 
 - No "check for updates" script support. (v0.1.7)
-- We don't support groups - useful for disk images. (v0.1.8)
 - No build profiling (used disk space, memory, etc). (v0.1.8) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.1.8)
@@ -33,6 +32,7 @@ Things that the new system does not fix (yet):
   file, which should help speed up builds through letting me manually cache
   results, and ensure that cross-compiled packages work as expected (see the
   bash PKGBUILD for examples). (v0.1.9)
+- Automatic pkgrel bumps. (v0.1.9)
 - No cross-compile support in makepkg (via libmakepkg?). (v0.3.0)
 - A new "branch" for something still requires a complete rebuild, or "dirtying"
   some shared branch. (v???)
