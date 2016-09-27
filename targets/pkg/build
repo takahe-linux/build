@@ -137,8 +137,8 @@ EOF
         sed -i -e "s:strip \$@:${config[triplet]}-strip \$@:" \
             "${basedir}/usr/share/makepkg/tidy/strip.sh"
 
-        # TODO: We need the path, otherwise depcomp fails in the gcc build
-        #       (only for some architectures, though!)
+        # We need the path, otherwise depcomp fails in the gcc build (only for
+        # some architectures, though!)
         # TODO: Find a better fakechroot alternative?
         PATH="${basedir}/opt/${config[triplet]}/bin:/usr/bin" \
             fakechroot chroot "${basedir}" /build.sh || \
