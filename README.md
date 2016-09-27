@@ -2,45 +2,28 @@
 
 takahe-build - helper scripts for takahe-linux.
 
-# New build script #
+# Features #
 
-Previously, I used a script to create a new system image.
-Unfortunately, that script had a few... issues:
-
-- Hardcoded variables.
-- Build consistency issues.
-- Lacking in cleanup/teardown support.
-- Relied on date and time for identifying old targets.
-- Didn't use a chroot (we now use fakechroot).
-- Didn't differentiate between 'build' and 'runtime' dependencies.
-- Relied on some hacks.
-- Could not detect changes in other files, eg the config.
-- Didn't have native logging.
-- Required root.
-- Couldn't handle working with different git branches.
-- No distinction between host and target dependencies.
-
-Things that the new system does not fix (yet):
-
-- No "check for updates" script support. (v0.1.7)
-- No build profiling (used disk space, memory, etc). (v0.1.8) (#profile)
+- No "check for updates" script support. (v0.1.8)
+- ccache support. (v0.1.8)
+- Automatic pkgrel bumps. (v0.1.9)
+- No build profiling (used disk space, memory, etc). (v0.2.0) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
-  builds). (v0.1.8)
-- Asynchronous and networked builds. (v0.1.8)
+  builds). (v0.2.0)
+- Asynchronous and networked builds. (v0.2.1)
 - Add support for a 
   [config.site](https://www.gnu.org/software/autoconf/manual/autoconf-2.63/html_node/Site-Defaults.html)
   file, which should help speed up builds through letting me manually cache
   results, and ensure that cross-compiled packages work as expected (see the
-  bash PKGBUILD for examples). (v0.1.9)
-- Automatic pkgrel bumps. (v0.1.9)
+  bash PKGBUILD for examples). (v0.2.2)
 - No cross-compile support in makepkg (via libmakepkg?). (v0.3.0)
 - A new "branch" for something still requires a complete rebuild, or "dirtying"
   some shared branch. (v???)
 
-Things that have regressed:
+Things that have regressed compared to the original script:
 
 - Requires *even more* RAM, due to the chroot location, which is not currently
-  configurable. (v0.1.8) (depends on #profile)
+  configurable. (v0.2.3) (depends on #profile)
 
 # Usage #
 
