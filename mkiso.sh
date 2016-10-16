@@ -72,7 +72,7 @@ MENU COLOR tabmsg       31;40   #30ffffff #00000000 std
 LABEL linux
     MENU LABEL Takahe Linux
     LINUX ../vmlinuz
-    APPEND root=/dev/sr0 ro init=/usr/bin/sinit panic=10
+    APPEND root=/dev/sr0 ro panic=10
 
 LABEL hdt
     MENU LABEL HDT (Hardware Detection Tool)
@@ -107,6 +107,9 @@ EOF
     # Create a repo on the CDROM, for ease of access.
     install -dm0755 "${fs}/repo"
     cp "${configdir}/pkgs/"* "${fs}/repo/"
+
+    # Point pacman at the local repo.
+    sed -i "${fs}/etc/pacman.conf" -e 's:/mnt/repo:/repo:'
 
     # Generate the iso.
     # We need -rock (rock ridge extensions) and -no-emul-boot to let us have

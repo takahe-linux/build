@@ -29,7 +29,7 @@ genqemuscript() {
 #!/usr/bin/sh
 fakeroot "qemu-system-${config[arch_alias]}" "\$@" \
     -kernel "${mount}/boot/vmlinuz" \
-    -append "console=ttyS0 init=/usr/bin/sinit panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
+    -append "console=ttyS0 panic=1 rootfstype=9p rw rootflags=trans=virtio,version=9p2000.L" \
     -fsdev local,id=${tag},security_model=none,path=${mount} \
     -device virtio-9p-pci,fsdev=${tag},mount_tag=/dev/root \
     -m "${mem}" \
