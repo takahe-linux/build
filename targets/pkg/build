@@ -57,7 +57,7 @@ buildpackage() {
         gendefhostname "${basedir}"
 
         # Generate the build script.
-        cat > "${basedir}/etc/init/run" << EOF
+        cat > "${basedir}/etc/init.d/run" << EOF
 #!/usr/bin/bash
 
 # Poweroff once finished.
@@ -81,7 +81,7 @@ cd /pkg && \
     su nobody -s /usr/bin/sh -c '/usr/bin/bash -l makepkg' && \
     echo 'Success!' > /build.log
 EOF
-        chmod +x "${basedir}/etc/init/run"
+        chmod +x "${basedir}/etc/init.d/run"
 
         # Generate the qemu script.
         # TODO: How much RAM is enough? (#profile)

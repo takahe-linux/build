@@ -97,12 +97,12 @@ EOF
     root_own "${fs}" 'etc/fstab'
 
     # Add the init scripts.
-    cat > "${fs}/etc/init/run" << EOF
+    cat > "${fs}/etc/init.d/run" << EOF
 #!/usr/bin/sh
 /usr/bin/getty -l /usr/bin/login 0 /dev/console
 EOF
-    chmod +x "${fs}/etc/init/run"
-    root_own "${fs}" 'etc/init/run'
+    chmod +x "${fs}/etc/init.d/run"
+    root_own "${fs}" 'etc/init.d/run'
 
     # Create a repo on the CDROM, for ease of access.
     install -dm0755 "${fs}/repo"
