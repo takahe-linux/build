@@ -91,6 +91,7 @@ setup() {
     config[builddir]="${TMPDIR:-/tmp}/builder-${config[id]}/"
     mkdir -p "${config[builddir]}/logs/"
     mkdir -p "${config[builddir]}/cache/"
+    mkdir -p "${config[builddir]}/makepkg/"
 }
 
 ignore_arg() {
