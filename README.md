@@ -6,7 +6,6 @@ takahe-build - helper scripts for takahe-linux.
 
 - No "check for updates" script support. (v0.1.8)
 - ccache support. (v0.1.8)
-- Automatic pkgrel bumps. (v0.1.9)
 - No build profiling (used disk space, memory, etc). (v0.2.0) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
   builds). (v0.2.0)
