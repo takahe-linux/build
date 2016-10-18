@@ -8,7 +8,7 @@
 set -e -u
 
 # Initial setup.
-VERSION="0.1"
+VERSION="0.2"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
 source "$(dirname "$(realpath "$0")")/lib/libboot.sh"
@@ -18,6 +18,7 @@ populate_sysimage() {
     local configdir="$1"
     local sysimage="$2"
     local fs="$3"
+    shift 3
 
     loadrepoconf "${configdir}"
     
@@ -31,18 +32,19 @@ populate_sysimage() {
     sudo mkdir -p "${point}/var/lib/pacman" || \
         error 1 "Failed to create '${point}/var/lib/pacman'!"
     # Install the packages.
-    installpkglist "${configdir}" "${fs}" qemu
+    installpkglist "${configdir}" "${fs}" qemu "$@"
 
     # Add the initial scripts.
     sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"
 }
 
 # Set the usage string.
-USAGE="<configdir> [--fs=<fs type>] <image>"
+USAGE="<configdir> [--fs=<fs type>] <image> [extra packages ...]"
 # Parse the arguments.
 CONFIGDIR=""        # Config dir.
 SYSIMAGE=""         # Sysimage path.
 FS="ext2"           # Filesystem type.
+EXTRA=""        # Extra packages to install.
 parseargs $@ # Initial argument parse.
 # Manual argument parse.
 for arg in $@; do
@@ -54,7 +56,7 @@ for arg in $@; do
         elif [ -z "${SYSIMAGE}" ]; then
             SYSIMAGE="${arg}"
         else
-            error 1 "Unknown argument '${arg}'!"
+            EXTRA+=" ${arg}"
         fi;;
     esac
 done
@@ -63,4 +65,4 @@ if [ ! -f "${SYSIMAGE}" ]; then
     error 1 "'${SYSIMAGE}' is not a file!"
 fi
 
-populate_sysimage "${CONFIGDIR}" "${SYSIMAGE}" "${FS}"
+populate_sysimage "${CONFIGDIR}" "${SYSIMAGE}" "${FS}" ${EXTRA}

@@ -514,6 +514,7 @@ installpkglist() {
     local configdir="$1"
     local fs="$2"
     local pkglist="$3"
+    shift 3
 
     # Generate the temporary config file.
     local pacconf="${fs}/pacman.conf"
@@ -528,7 +529,7 @@ EOF
     # Run pacman...
     callpacman "${fs}" --cachedir "${configdir}/pkgs/" \
         --config "${pacconf}" \
-        -Sy $(cat "${configdir}/src/targets/${pkglist}")
+        -Sy $(cat "${configdir}/src/targets/${pkglist}") "$@"
     # Clean up...
     rm -f "${pacconf}"
 }

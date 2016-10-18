@@ -8,8 +8,8 @@
 set -e
 
 # Initial setup.
-VERSION="0.1"
-USAGE="<config dir> <iso file>"
+VERSION="0.2"
+USAGE="<config dir> <iso file> [extra packages ...]"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
 source "$(dirname "$(realpath "$0")")/lib/libboot.sh"
@@ -31,7 +31,7 @@ main() {
     # Generate the fs and boot.
     local configdir="$1"
     local iso="$2"
-    shift
+    shift 2
 
     loadrepoconf "${configdir}"
 
@@ -45,7 +45,7 @@ main() {
     mkdir -p "${fs}/var/lib/pacman"
 
     # Install the packages.
-    installpkglist "${configdir}" "${fs}" cdrom
+    installpkglist "${configdir}" "${fs}" cdrom "$@"
 
     # We assume syslinux; set it up.
     local filename
@@ -133,6 +133,7 @@ EOF
 # Parse the arguments.
 CONFIGDIR=""    # Set the initial config dir.
 ISOFILE=""      # Set the iso file.
+EXTRA=""        # Extra packages to install.
 parseargs "$@"  # Initial argument parse.
 # Manual argument parse.
 for arg in "$@"; do
@@ -143,7 +144,7 @@ for arg in "$@"; do
         elif [ -z "${ISOFILE}" ]; then
             ISOFILE="${arg}"
         else
-            error 1 "Unknown arg '${arg}'!"
+            EXTRA+=" ${arg}"
         fi;;
     esac
 done
@@ -152,5 +153,4 @@ if [ -z "${ISOFILE}" ]; then
     error 2 "No iso file specified!"
 fi
 
-main "${CONFIGDIR}" "${ISOFILE}"
-
+main "${CONFIGDIR}" "${ISOFILE}" ${EXTRA}

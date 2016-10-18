@@ -8,8 +8,8 @@
 set -e
 
 # Initial setup.
-VERSION="0.1"
-USAGE="<config dir>"
+VERSION="0.2"
+USAGE="<config dir> [extra packages ...]"
 source "$(dirname "$(realpath "$0")")/lib/libmain.sh"
 source "$(dirname "$(realpath "$0")")/lib/libpackage.sh"
 source "$(dirname "$(realpath "$0")")/lib/libboot.sh"
@@ -25,7 +25,7 @@ main() {
     mkdir -p "${fs}/var/lib/pacman"
 
     # Install the packages.
-    installpkglist "${configdir}" "${fs}" qemu
+    installpkglist "${configdir}" "${fs}" qemu "$@"
 
     # Add the initial scripts.
     gendefhostname "${fs}"
@@ -47,6 +47,7 @@ EOF
 
 # Parse the arguments.
 CONFIGDIR=""    # Set the initial config dir.
+EXTRA=""        # Extra packages to install.
 parseargs "$@"  # Initial argument parse.
 # Manual argument parse.
 for arg in "$@"; do
@@ -55,10 +56,10 @@ for arg in "$@"; do
         *) if [ -z "${CONFIGDIR}" ]; then
             CONFIGDIR="${arg}"
         else
-            error 1 "Unknown arg '${arg}'!"
+            EXTRA+=" ${arg}"
         fi;;
     esac
 done
 setup "${CONFIGDIR}"
 
-main "${CONFIGDIR}"
+main "${CONFIGDIR}" ${EXTRA}
