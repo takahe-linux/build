@@ -167,7 +167,8 @@ check_permissions() {
         fi
     elif [ -d "${f}" ]; then
         if [ "${perm}" -ne 0755 ] && [ "${perm}" -ne 0750 ] && \
-            [ "${perm}" -ne 0700 ] && [ "${perm}" -ne 0555 ]; then
+            [ "${perm}" -ne 0700 ] && [ "${perm}" -ne 0555 ] && \
+            [ "${perm}" -ne 0711 ]; then
             fail_dir "${dir}" "Dir '${f}' has permissions '${perm}'"
         fi
     fi
