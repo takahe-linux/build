@@ -146,6 +146,13 @@ EOF
     fi
 }
 
+# Check that we haven't already built the package.
+pkgnames="$(pkgdirpackages "${configdir}" "${name}")"
+for pkgname in ${pkgnames}; do
+    [ -e "${configdir}/pkgs/${pkgname}" ] && \
+        error 1 "Package ${pkgname} already has been built!"
+done
+
 # Prepare the sysroot.
 # Create the base dir.
 if [ -e "${basedir}" ]; then
@@ -164,7 +171,7 @@ extractsrctar "${configdir}" "${name}" "${basedir}"
 buildpackage "${configdir}" "${name}" "${repo}" "${basedir}"
 
 # Copy the built packages into the pkg dir.
-for pkgname in $(pkgdirpackages "${configdir}" "${name}"); do
+for pkgname in ${pkgnames}; do
     cp "${basedir}/pkg/${pkgname}" "${configdir}/pkgs" || \
         error 1 "Package '${pkgname}' not generated!"
     # Add the package to the repo if needed.
