@@ -39,6 +39,10 @@ visit_target() {
     local target="$2"
     shift 2
 
+    # TODO: This does not work on git packages, since they may have had a
+    #       version bump, and it only runs for packages of the same
+    #       architecture.
+
     local state="${targets["${target}"]}"
     case "${state}" in
         good|rebuilt)

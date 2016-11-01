@@ -147,6 +147,9 @@ EOF
 }
 
 # Check that we haven't already built the package.
+# TODO: Not really an issue here, but being able to ignore existing packages
+#       instead of failing would be nice (for iterated rebuilds, eg testing
+#       patches).
 pkgnames="$(pkgdirpackages "${configdir}" "${name}")"
 for pkgname in ${pkgnames}; do
     [ -e "${configdir}/pkgs/${pkgname}" ] && \
