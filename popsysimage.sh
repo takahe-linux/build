@@ -23,19 +23,24 @@ populate_sysimage() {
     loadrepoconf "${configdir}"
     
     # Prepare the mountpoint.
-    point="$(sudo mktemp -d "${TMPDIR:-/tmp}/mount.XXXX")" || \
+    point="$(mktemp -d "${TMPDIR:-/tmp}/mount.XXXX")" || \
         error 1 "Failed to make a temporary dir to mount '${sysimage}' on!"
-    cleanup="sudo rm -rf '${point}'"; trap "${cleanup}" EXIT
-    sudo mount "${sysimage}" "${point}" || \
+    cleanup="rm -rf '${point}'"; trap "${cleanup}" EXIT
+    mount "${sysimage}" "${point}" || \
         error 1 "Failed to mount the system image!"
-    cleanup="sudo umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
-    sudo mkdir -p "${point}/var/lib/pacman" || \
+    cleanup="umount '${point}' && ${cleanup}"; trap "${cleanup}" EXIT
+    mkdir -p "${point}/var/lib/pacman" || \
         error 1 "Failed to create '${point}/var/lib/pacman'!"
     # Install the packages.
-    installpkglist "${configdir}" "${fs}" qemu "$@"
+    installpkglist "${configdir}" "${point}" qemu "$@"
 
     # Add the initial scripts.
-    sudo bash -c "printf 'qemu\n' > '${point}/etc/hostname'"
+    bash -c "printf 'qemu\n' > '${point}/etc/hostname'"
+    cat > "${point}/etc/init.d/run" << EOF
+#!/usr/bin/sh
+/usr/bin/getty -l /usr/bin/login 0 /dev/console
+EOF
+    chmod +x "${point}/etc/init.d/run"
 }
 
 # Set the usage string.
