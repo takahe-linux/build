@@ -203,6 +203,8 @@ findpkgdeps() {
             elif [ "${deptype}" == "hostdepends" ] || \
                 [ "${deptype}" == "checkdepends" ]; then
                 depdirs="toolchain"
+            elif [ "${repo}" == "cross" ]; then
+                depdirs="cross native"
             else
                 depdirs="${repo}"
             fi
@@ -335,9 +337,7 @@ installdeps() {
     installtooldeps "${configdir}" "${target%%/*}" "${basedir}" \
         "${tooldepends[@]}"
     installcrossdeps "${configdir}" "${target%%/*}" "${basedir}" \
-        "${crossdepends[@]}"
-    installnativedeps "${configdir}" "${target%%/*}" "${basedir}" \
-        "${nativedepends[@]}"
+        "${crossdepends[@]}" "${nativedepends[@]}"
 }
 
 callpacman() {
@@ -438,31 +438,6 @@ installcrossdeps() {
     # Install the given packages.
     callpacman "${root}" --arch "${config[arch]}" \
         -U $(mappkgs "${configdir}" "${@}")
-}
-
-installnativedeps() {
-    # Install the given list of native deps.
-    local configdir="$1"
-    local repo="${repotype["$2"]}"
-    local basedir="$3"
-    shift 3
-    if [ "$#" -eq 0 ]; then return; fi
-
-    if [ "${repo}" != "native" ]; then
-        error 1 "Cannot install native deps to a non-native root!"
-    fi
-
-    message info "Installing native packages to ${basedir}:"
-    for i in "$@"; do message info "    $i"; done
-
-    # Set up the root.
-    if [ ! -d "${basedir}/var/lib/pacman" ]; then
-        mkdir -p "${basedir}/var/lib/pacman"
-    fi
-
-    # Install the given packages.
-    callpacman "${basedir}" --arch "${config[arch]}" \
-        -U $(mappkgs "${configdir}" "$@")
 }
 
 printallpkgs() {
