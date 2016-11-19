@@ -119,8 +119,7 @@ check_nodl() {
     fi
 
     local readelf arch
-    readelf="$(readelf -h -d "${f}" 2> /dev/null)" || \
-        continue
+    readelf="$(readelf -h -d "${f}" 2> /dev/null)" || true
     arch="$(printf '%s' "${readelf}" | sed -n -e '/Machine:/p' | \
         sed 's/.*:[ \t]*//' | head -n 1)"
     # Check that the file is statically linked.
