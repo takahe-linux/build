@@ -22,7 +22,7 @@ genqemuscript() {
         local mem="$2"
     else
         # Default to some small value.
-        local mem=24
+        local mem=32
     fi
     local tag="root"
     cat > "${mount}/qemu.sh" << EOF
