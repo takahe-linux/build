@@ -1,8 +1,8 @@
-# README #
+# README
 
 takahe-build - helper scripts for takahe-linux.
 
-# Features #
+# Planned Features
 
 - No "check for updates" script support. (v0.1.8)
 - ccache support. (v0.1.8)
@@ -24,7 +24,7 @@ Things that have regressed compared to the original script:
 - Requires *even more* RAM, due to the chroot location, which is not currently
   configurable. (v0.2.3) (depends on #profile)
 
-# Usage #
+# Usage
 
 To generate/update the packages:
  ./rebuild.sh _configdir_
