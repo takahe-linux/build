@@ -41,7 +41,7 @@ visit_target() {
 
     # TODO: This does not work on git packages, since they may have had a
     #       version bump, and it only runs for packages of the same
-    #       architecture.
+    #       architecture; this may skip (eg) syslinux when relbumping for mips.
 
     local state="${targets["${target}"]}"
     case "${state}" in
