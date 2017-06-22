@@ -195,6 +195,7 @@ findpkgdeps() {
             continue
         fi
         local depdirs depdir
+        local host_missing="false"
         if [ "${repo}" == "native" ]; then
             depdirs="native cross"
         else
@@ -203,10 +204,12 @@ findpkgdeps() {
             elif [ "${deptype}" == "hostdepends" ] || \
                 [ "${deptype}" == "checkdepends" ]; then
                 depdirs="toolchain"
+                host_missing="true"
             elif [ "${repo}" == "cross" ]; then
                 depdirs="cross native"
             else
                 depdirs="${repo}"
+                [ "${repo}" == "toolchain" ] && host_missing="true"
             fi
         fi
         for depdir in ${depdirs}; do
