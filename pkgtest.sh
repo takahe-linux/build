@@ -65,13 +65,23 @@ check_root() {
 
     message debug "Checking for invalid files in root..."
 
-    local valid=(
+    local valid valid_filesystem
+    declare -A valid=(
         [boot]=""
+        [etc]=""
+        [usr]=""
+        [var]=""
+    )
+
+    declare -A valid_filesystem=(
+        [boot]=""
+        [bin]=""
         [dev]=""
         [etc]=""
         [home]=""
         [mnt]=""
         [proc]=""
+        [root]=""
         [sys]=""
         [tmp]=""
         [run]=""
@@ -82,7 +92,13 @@ check_root() {
     for i in "${dir}"/*; do
         root_dir="$(basename "${i}")"
         if [ "${valid["${root_dir}"]+set}" != 'set' ]; then
-            fail_dir "${dir}" "/${root_dir} exists"
+            # Only let filesystem provide some dirs.
+            if [ "${valid_filesystem["${root_dir}"]+set}" == 'set' ] && \
+                [ "$(get_pkgname "${dir}")" == "filesystem" ]; then
+                : # Ignore...
+            else
+                fail_dir "${dir}" "/${root_dir} exists"
+            fi
         fi
     done
 }
