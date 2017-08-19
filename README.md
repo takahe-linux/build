@@ -5,6 +5,10 @@ takahe-build - helper scripts for takahe-linux.
 # Planned Features
 
 - No "check for updates" script support. (v0.1.8)
+  This could be implemented by checking upstream for a more recent version,
+  either by probing or parsing an updates page, by using
+  [repology](https://repology.org/api/v1) for versions, or by a combination of
+  the above methods.
 - ccache support. (v0.1.8)
 - No build profiling (used disk space, memory, etc). (v0.2.0) (#profile)
 - No 'activity monitor' (should be relatively easy to fix, prereq for async
