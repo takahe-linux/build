@@ -29,11 +29,6 @@ main() {
 
     # Add the initial scripts.
     gendefhostname "${fs}"
-    cat > "${fs}/etc/init.d/run" << EOF
-#!/usr/bin/sh
-/usr/bin/getty -l /usr/bin/login 0 /dev/console
-EOF
-    chmod +x "${fs}/etc/init.d/run"
 
     # Install the utilities.
     for file in "${configdir}/src/util/"*; do
