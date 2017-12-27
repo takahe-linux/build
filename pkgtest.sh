@@ -3,7 +3,7 @@
 # Inspect the packages and print any problems.
 #
 # - Check that the root filesystem only contains the expected paths.
-# - Check that no dynamically linked files are present.
+# - Check that no statically linked files are present.
 # - Check that some directories are not present
 #   (eg /usr/local, /usr/share/info, ...).
 # - Check that all symlinks point to files provided by a package.
@@ -53,7 +53,7 @@ extract_pkg() {
     message debug "Extracting package '${pkgname}' into '${dir}'"
     
     pushd "${dir}" > /dev/null
-    tar -xaf "${pkg}"
+    bsdtar -xf "${pkg}"
     rm -f .MTREE .BUILDINFO
     popd > /dev/null
     message debug "Package extracted"
@@ -120,8 +120,8 @@ check_nodirs() {
     fi
 }
 
-check_nodl() {
-    # Check that there are no dynamically linked binaries or libraries.
+check_bin() {
+    # Check that there are no invalid binaries or libraries.
     local dir="$1"
     local f="$2"
 
@@ -133,16 +133,15 @@ check_nodl() {
     if printf '%s' "${f}" | grep -e '\.c32$' > /dev/null; then
         return
     fi
+    # Catch statically linked libraries.
+    if printf '%s' "${f}" | grep -e '\.a$' > /dev/null; then
+        fail_dir "${dir}" "${f} seems to be a statically linked library!"
+    fi
 
     local readelf arch
     readelf="$(readelf -h -d "${f}" 2> /dev/null)" || true
     arch="$(printf '%s' "${readelf}" | sed -n -e '/Machine:/p' | \
         sed 's/.*:[ \t]*//' | head -n 1)"
-    # Check that the file is statically linked.
-    if printf '%s' "${readelf}" | \
-        grep '^Dynamic section' > /dev/null; then
-        fail_dir "${dir}" "Found dynamic linked file ${f}"
-    fi
     # Check arch.
     if [ -z "${arch}" ]; then
         arch="${global_arch}"
@@ -222,7 +221,7 @@ check_pkg() {
         if [ -e "${f}" ]; then
             check_file "${dir}" "${f}"
             check_permissions "${dir}" "${f}"
-            check_nodl "${dir}" "${f}"
+            check_bin "${dir}" "${f}"
         fi
     done
     popd > /dev/null
