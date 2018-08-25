@@ -2,7 +2,8 @@
 
 # We record information about repo directories in a datastructure.
 declare -A repotype
-declare -A repodepends
+declare -A repomakedepends
+declare -A repohostdepends
 
 # Standardise the source and package name extensions.
 # Use gzip as it requires less memory to decompress.
@@ -24,7 +25,8 @@ loadrepoconf() {
         while IFS="= $(printf '\t\n')" read key value; do
             case "${key}" in
                 type) repotype["${reponame}"]="${value}";;
-                depends) repodepends["${reponame}"]="${value}";;
+                hostdepends) repohostdepends["${reponame}"]="${value}";;
+                makedepends) repomakedepends["${reponame}"]="${value}";;
                 *) error 1 "Unknown key in '${conf}' - ${key}";;
             esac
         done < <(sed "${conf}" -n -e 's:^[ \t]*::' -e '/^[^#]/p')
@@ -257,7 +259,14 @@ gendeps() {
         error 1 "Failed to extract the deps from the PKGBUILD!"
 
     # Add the extra dependencies from the repo config.
-    printf 'makedepends = %s\n' ${repodepends["${target%%/*}"]}
+    local repomakedepends="${repomakedepends["${target%%/*}"]}"
+    if [ -n "${repomakedepends}" ]; then
+        printf 'makedepends = %s\n' ${repomakedepends["${target%%/*}"]}
+    fi
+    local repohostdepends="${repohostdepends["${target%%/*}"]}"
+    if [ -n "${repohostdepends}" ]; then
+        printf 'hostdepends = %s\n' ${repohostdepends["${target%%/*}"]}
+    fi
 }
 
 installdeps() {
