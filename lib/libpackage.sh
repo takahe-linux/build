@@ -354,9 +354,8 @@ installdeps() {
 
 callpacman() {
     # Call pacman on the given sysroot.
-    local args="$@"
-    message debug "Running pacman with args '--noconfirm --root ${args}'"
-    fakechroot fakeroot pacman --noconfirm --root "$@" || \
+    message debug "Running pacman with args '---root $@'"
+    fakechroot fakeroot pacman --root "$@" || \
         error 1 "Failed to run pacman on the root!"
 }
 
@@ -414,13 +413,13 @@ installtooldeps() {
 
     # Install base-devel.
     if [ "${#hostdeps}" -gt 0 ]; then
-        callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -S \
+        callpacman "${basedir}" --noconfirm --cachedir /var/cache/pacman/pkg -S \
             ${hostdeps[@]}
     fi
     
     # Install the given packages.
     if [ "${#toolchaindeps}" -gt 0 ]; then
-        callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -U \
+        yes 'y' | callpacman "${basedir}" --cachedir /var/cache/pacman/pkg -U \
             $(mappkgs "${configdir}" "${toolchaindeps[@]}")
     fi
 }
@@ -448,7 +447,7 @@ installcrossdeps() {
     fi
 
     # Install the given packages.
-    callpacman "${root}" --arch "${config[arch]}" \
+    callpacman "${root}" --noconfirm --arch "${config[arch]}" \
         -U $(mappkgs "${configdir}" "${@}")
 }
 
@@ -514,7 +513,7 @@ Server = file://$(realpath "${configdir}")/pkgs/
 EOF
 
     # Run pacman...
-    callpacman "${fs}" --cachedir "${configdir}/pkgs/" \
+    yes '' | callpacman "${fs}" --cachedir "${configdir}/pkgs/" \
         --config "${pacconf}" \
         -Sy $(cat "${configdir}/src/targets/${pkglist}") "$@"
     # Clean up...
